@@ -1,0 +1,13 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+/vendor/
+/node_modules/
+/public/storage
+/storage/*.key
+/storage/logs/*
+!/storage/logs/.gitkeep
+.phpunit.result.cache
+/IGFB-Test.html
+/test.php
