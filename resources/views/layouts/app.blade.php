@@ -55,5 +55,6 @@
   onScroll();
   window.addEventListener('scroll', onScroll, { passive: true });
 </script>
+@yield('scripts')
 </body>
 </html>

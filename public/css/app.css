@@ -112,19 +112,174 @@ img { max-width: 100%; display: block; }
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(120deg, rgba(15, 28, 26, 0.78), rgba(27, 58, 52, 0.35) 48%, rgba(227, 106, 74, 0.22)),
-    url("data:image/svg+xml,%3Csvg width='160' height='160' viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.06'%3E%3Cpath d='M0 80h160M80 0v160'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(120deg, rgba(15, 28, 26, 0.82), rgba(27, 58, 52, 0.4) 48%, rgba(227, 106, 74, 0.2)),
+    radial-gradient(ellipse 70% 55% at 72% 28%, rgba(47, 107, 93, 0.45), transparent 60%),
     radial-gradient(circle at 70% 40%, #2f6b5d, #0f1c1a 70%);
-  background-size: cover, 80px 80px, cover;
   z-index: 0;
   animation: heroShift 18s ease-in-out infinite alternate;
 }
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 50% at 18% 88%, rgba(15, 28, 26, 0.88) 0%, transparent 70%),
+    linear-gradient(90deg, rgba(15, 28, 26, 0.5) 0%, transparent 46%);
+  z-index: 1;
+  pointer-events: none;
+}
 .hero-copy {
   position: relative;
-  z-index: 1;
-  max-width: 760px;
+  z-index: 3;
+  max-width: 34rem;
   color: #f7f4ee;
   animation: riseIn .9s ease both;
+}
+
+/* KOL social feed wall */
+.kol-wall {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(56vw, 680px);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  padding: 1.1rem 1.5rem 1.1rem 0;
+  z-index: 2;
+  mask-image: linear-gradient(90deg, transparent 0%, black 16%, black 82%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 16%, black 82%, transparent 100%);
+  pointer-events: none;
+  opacity: 0;
+  animation: wallIn 1.4s 0.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes wallIn {
+  from { opacity: 0; transform: translateX(24px); filter: blur(8px); }
+  to { opacity: 0.94; transform: translateX(0); filter: blur(0); }
+}
+.kol-col {
+  position: relative;
+  overflow: hidden;
+  mask-image: linear-gradient(180deg, transparent 0%, black 7%, black 93%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 7%, black 93%, transparent 100%);
+}
+.kol-track {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  will-change: transform;
+}
+.kol-col[data-dir="up"] .kol-track { animation: marqueeUp var(--dur, 48s) linear infinite; }
+.kol-col[data-dir="down"] .kol-track { animation: marqueeDown var(--dur, 56s) linear infinite; }
+@keyframes marqueeUp {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
+}
+@keyframes marqueeDown {
+  from { transform: translateY(-50%); }
+  to { transform: translateY(0); }
+}
+.kol-post {
+  flex-shrink: 0;
+  background: #f7f3eb;
+  color: var(--ink);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgba(8, 14, 10, 0.28);
+}
+.kol-post-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.5rem;
+}
+.kol-avatar {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #d9d2c4;
+}
+.kol-post-meta { min-width: 0; flex: 1; line-height: 1.15; }
+.kol-handle {
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kol-niche {
+  display: block;
+  font-size: 0.48rem;
+  color: #6b6358;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kol-plat {
+  flex-shrink: 0;
+  font-size: 0.45rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7a7266;
+  padding: 0.18rem 0.35rem;
+  border: 1px solid #ddd4c4;
+  border-radius: 999px;
+}
+.kol-media {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background: #cfc6b6;
+  overflow: hidden;
+}
+.kol-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.92) contrast(1.02);
+}
+.kol-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(20, 17, 14, 0.18) 100%);
+  pointer-events: none;
+}
+.kol-post-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.4rem 0.55rem 0.5rem;
+}
+.kol-stats { display: flex; align-items: center; gap: 0.55rem; }
+.kol-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  font-size: 0.52rem;
+  font-weight: 700;
+  color: #2a261f;
+}
+.kol-stat svg { width: 0.72rem; height: 0.72rem; flex-shrink: 0; }
+.kol-stat.likes svg { color: #c23b4a; }
+.kol-stat.shares svg { color: #3d5a4a; }
+.kol-caption {
+  font-size: 0.48rem;
+  color: #6b6358;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 42%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kol-wall { animation: none; opacity: 0.9; }
+  .kol-col[data-dir] .kol-track { animation: none; }
 }
 .hero-brand {
   font-family: var(--font-display);
@@ -265,4 +420,32 @@ textarea { min-height: 120px; resize: vertical; }
   .section, .hero { padding-left: 1.25rem; padding-right: 1.25rem; }
   .flash { margin-left: 1.25rem; margin-right: 1.25rem; }
   .msg { max-width: 92%; }
+  .hero {
+    align-items: start;
+    min-height: auto;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    gap: 1.5rem;
+  }
+  .hero::after {
+    background: linear-gradient(180deg, transparent 35%, rgba(15, 28, 26, 0.75) 100%);
+  }
+  .kol-wall {
+    position: relative;
+    width: 100%;
+    height: 42vh;
+    min-height: 260px;
+    padding: 0;
+    order: -1;
+    mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+  }
+  .hero-copy { max-width: none; }
+}
+@media (max-width: 560px) {
+  .kol-wall {
+    grid-template-columns: repeat(2, 1fr);
+    height: 34vh;
+  }
+  .kol-wall .kol-col:last-child { display: none; }
 }
