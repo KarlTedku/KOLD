@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Instagram oEmbed Test</title>
+</head>
+<body>
+  <h1>📲 Instagram oEmbed 測試結果</h1>
+  <div id="output">Loading...</div>
+
+  <script>
+    const postURL = "https://www.instagram.com/p/DJTBYsJSG2P/";
+    const appId = "1310103137345062";
+    const appSecret = "c9a828a26c7fc3f5c1b9d25517ba1090";
+
+    const token = `${appId}|${appSecret}`;
+
+    const apiURL = `https://graph.facebook.com/v19.0/instagram_oembed?url=${encodeURIComponent(postURL)}&access_token=${token}`;
+
+    fetch(apiURL)
+      .then(res => res.json())
+      .then(data => {
+        console.log("API Response:", data);
+        const output = document.getElementById("output");
+        const authorName = data.author_name || "未能擷取";
+        const authorUrl = data.author_url || "#";
+        const thumbnailUrl = data.thumbnail_url || "";
+        const title = data.title || "未能擷取";
+        output.innerHTML = `
+          <p><strong>用戶名稱：</strong> ${authorName}</p>
+          <p><strong>用戶連結：</strong> <a href="${authorUrl}" target="_blank">${authorUrl}</a></p>
+          <p><strong>預覽圖片：</strong><br>${thumbnailUrl ? `<img src="${thumbnailUrl}" width="300">` : "未能擷取圖片"}</p>
+          <p><strong>標題：</strong> ${title}</p>
+        `;
+      })
+      .catch(err => {
+        document.getElementById("output").innerText = "❌ 載入失敗：" + err;
+      });
+  </script>
+</body>
+</html>
