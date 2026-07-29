@@ -2,6 +2,8 @@
 
 KOL ↔ 品牌雙向媒合平台（Laravel）。
 
+**Production:** https://kold.tedku.cloud
+
 ## MVP 功能
 
 - Google／Meta SSO（需設定 OAuth；未設定時可用示範登入）
@@ -21,6 +23,13 @@ php artisan serve
 ```
 
 開啟 `http://localhost:8000`，可用首頁示範登入走完流程。
+
+## 部署
+
+見 [DEPLOY.md](DEPLOY.md)。
+
+- Push 到 `main` → GitHub Actions 自動部署正式站
+- 本機有 SSH 時亦可跑 `./scripts/deploy.sh`
 
 ## 環境變數
 
