@@ -1,0 +1,72 @@
+name: Deploy KOLD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: kold-production-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          KOLD_DEPLOY_SSH_KEY: ${{ secrets.KOLD_DEPLOY_SSH_KEY }}
+          KOLD_DEPLOY_HOST: ${{ secrets.KOLD_DEPLOY_HOST }}
+        run: |
+          test -n "$KOLD_DEPLOY_SSH_KEY"
+          test -n "$KOLD_DEPLOY_HOST"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$KOLD_DEPLOY_SSH_KEY" > ~/.ssh/kold_deploy
+          chmod 600 ~/.ssh/kold_deploy
+          ssh-keyscan -H "$KOLD_DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Rsync application
+        env:
+          KOLD_DEPLOY_HOST: ${{ secrets.KOLD_DEPLOY_HOST }}
+        run: |
+          rsync -az --delete \
+            --exclude='.env' \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='vendor' \
+            --exclude='database/database.sqlite' \
+            --exclude='storage/logs/*' \
+            --exclude='storage/framework/cache/data/*' \
+            --exclude='storage/framework/sessions/*' \
+            --exclude='storage/framework/views/*' \
+            --exclude='IGFB-Test.html' \
+            --exclude='test.php' \
+            --exclude='.DS_Store' \
+            -e 'ssh -i ~/.ssh/kold_deploy -o IdentitiesOnly=yes' \
+            ./ "root@${KOLD_DEPLOY_HOST}:/var/www/kold/"
+
+      - name: Install and refresh Laravel
+        env:
+          KOLD_DEPLOY_HOST: ${{ secrets.KOLD_DEPLOY_HOST }}
+        run: |
+          ssh -i ~/.ssh/kold_deploy -o IdentitiesOnly=yes "root@${KOLD_DEPLOY_HOST}" 'bash -s' <<'EOF'
+          set -euo pipefail
+          cd /var/www/kold
+          composer install --no-dev --optimize-autoloader --no-interaction
+          php artisan migrate --force
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+          mkdir -p storage/framework/{cache/data,sessions,views} storage/logs bootstrap/cache
+          chown -R www-data:www-data storage bootstrap/cache database
+          systemctl reload nginx
+          echo DEPLOY_OK
+          EOF
+
+      - name: Smoke check
+        run: |
+          curl -fsSL -o /dev/null -w "%{http_code}\n" https://kold.tedku.cloud/
+          curl -fsSL https://kold.tedku.cloud/ | grep -q 'KOLD'
