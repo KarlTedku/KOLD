@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'niches',
     'regions',
     'languages',
+    'age_range',
+    'photos',
     'rate_min',
     'rate_max',
     'status',
@@ -25,6 +27,7 @@ class KolProfile extends Model
             'niches' => 'array',
             'regions' => 'array',
             'languages' => 'array',
+            'photos' => 'array',
             'rate_min' => 'integer',
             'rate_max' => 'integer',
         ];
@@ -38,5 +41,10 @@ class KolProfile extends Model
     public function isPublished(): bool
     {
         return $this->status === 'published';
+    }
+
+    public function totalFollowers(): int
+    {
+        return (int) $this->user?->socialAccounts?->sum('follower_count');
     }
 }

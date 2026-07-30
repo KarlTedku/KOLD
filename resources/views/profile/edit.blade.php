@@ -24,6 +24,15 @@
                     <input name="regions" value="{{ old('regions', implode('，', $profile?->regions ?? [])) }}">
                     <label>語言</label>
                     <input name="languages" value="{{ old('languages', implode('，', $profile?->languages ?? [])) }}">
+                    <label>年齡層</label>
+                    <select name="age_range">
+                        <option value="">未設定</option>
+                        <option value="18-24" @selected(old('age_range', $profile?->age_range) === '18-24')>18–24</option>
+                        <option value="25-34" @selected(old('age_range', $profile?->age_range) === '25-34')>25–34</option>
+                        <option value="35-44" @selected(old('age_range', $profile?->age_range) === '35-44')>35–44</option>
+                    </select>
+                    <label>作品圖 URL（逗號分隔）</label>
+                    <textarea name="photos" placeholder="https://…">{{ old('photos', implode('，', $profile?->photos ?? [])) }}</textarea>
                     <div class="grid grid-2">
                         <div>
                             <label>報價下限</label>

@@ -4,10 +4,25 @@
 
 @section('content')
 <section class="section">
-    <h2>{{ $user->profileDisplayName() }}</h2>
-    <p class="lead">{{ $user->isKol() ? 'KOL 公開檔案' : '品牌公開檔案' }}</p>
+    <div class="profile-hero">
+        @if ($user->avatar)
+            <img class="profile-hero-avatar" src="{{ $user->avatar }}" alt="{{ $user->profileDisplayName() }}">
+        @endif
+        <div>
+            <h2 style="margin:0">{{ $user->profileDisplayName() }}</h2>
+            <p class="lead" style="margin:.4rem 0 0">{{ $user->isKol() ? 'KOL 公開檔案' : '品牌公開檔案' }}</p>
+            @if ($user->isKol() && $user->kolProfile?->age_range)
+                <div class="meta" style="margin-top:.55rem">
+                    <span class="chip">年齡層 {{ $user->kolProfile->age_range }}</span>
+                    @foreach ($user->kolProfile->regions ?? [] as $region)
+                        <span class="chip">{{ $region }}</span>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    </div>
 
-    <div class="grid grid-2">
+    <div class="grid grid-2" style="margin-top:1.25rem">
         <div class="panel">
             @if ($user->isKol() && $user->kolProfile)
                 <p>{{ $user->kolProfile->bio }}</p>
@@ -17,11 +32,19 @@
                     @endforeach
                 </div>
                 <p style="margin-top:1rem;opacity:.75">
-                    地區：{{ implode('、', $user->kolProfile->regions ?? []) ?: '—' }}
-                    · 語言：{{ implode('、', $user->kolProfile->languages ?? []) ?: '—' }}
+                    語言：{{ implode('、', $user->kolProfile->languages ?? []) ?: '—' }}
                 </p>
                 @if ($user->kolProfile->rate_min || $user->kolProfile->rate_max)
-                    <p>參考報價：{{ $user->kolProfile->rate_min ?? '—' }} – {{ $user->kolProfile->rate_max ?? '—' }}</p>
+                    <p>參考報價：{{ number_format((int) ($user->kolProfile->rate_min ?? 0)) }} – {{ number_format((int) ($user->kolProfile->rate_max ?? 0)) }}</p>
+                @endif
+
+                @if (! empty($user->kolProfile->photos))
+                    <h3 style="margin:1.4rem 0 .7rem;font-family:var(--font-display)">作品</h3>
+                    <div class="photo-wall">
+                        @foreach ($user->kolProfile->photos as $photo)
+                            <img src="{{ $photo }}" alt="作品">
+                        @endforeach
+                    </div>
                 @endif
             @elseif ($user->isBrand() && $user->brandProfile)
                 <p>{{ $user->brandProfile->bio }}</p>

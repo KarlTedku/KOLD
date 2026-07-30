@@ -16,6 +16,9 @@ class DiscoverController extends Controller
         $q = trim((string) $request->get('q', ''));
         $region = trim((string) $request->get('region', ''));
         $niche = trim((string) $request->get('niche', ''));
+        $ageRange = trim((string) $request->get('age_range', ''));
+        $followers = trim((string) $request->get('followers', ''));
+        $platform = trim((string) $request->get('platform', ''));
 
         if ($user->isBrand()) {
             $profiles = KolProfile::query()
@@ -32,6 +35,29 @@ class DiscoverController extends Controller
                 })
                 ->when($region !== '', function ($query) use ($region) {
                     $query->where('regions', 'like', "%{$region}%");
+                })
+                ->when($ageRange !== '', function ($query) use ($ageRange) {
+                    $query->where('age_range', $ageRange);
+                })
+                ->when($platform !== '', function ($query) use ($platform) {
+                    $query->whereHas('user.socialAccounts', function ($social) use ($platform) {
+                        $social->where('platform', $platform);
+                    });
+                })
+                ->when($followers !== '', function ($query) use ($followers) {
+                    [$min, $max] = $this->followerBounds($followers);
+                    $query->whereHas('user', function ($userQuery) use ($min, $max) {
+                        $userQuery->whereRaw(
+                            '(select coalesce(sum(follower_count), 0) from social_accounts where social_accounts.user_id = users.id) >= ?',
+                            [$min]
+                        );
+                        if ($max !== null) {
+                            $userQuery->whereRaw(
+                                '(select coalesce(sum(follower_count), 0) from social_accounts where social_accounts.user_id = users.id) <= ?',
+                                [$max]
+                            );
+                        }
+                    });
                 })
                 ->latest()
                 ->paginate(12)
@@ -59,9 +85,21 @@ class DiscoverController extends Controller
                 ->withQueryString();
 
             $mode = 'brand';
+            $ageRange = '';
+            $followers = '';
+            $platform = '';
         }
 
-        return view('discover.index', compact('profiles', 'mode', 'q', 'region', 'niche'));
+        return view('discover.index', compact(
+            'profiles',
+            'mode',
+            'q',
+            'region',
+            'niche',
+            'ageRange',
+            'followers',
+            'platform'
+        ));
     }
 
     public function show(User $user): View
@@ -81,5 +119,19 @@ class DiscoverController extends Controller
         }
 
         return view('discover.show', compact('user', 'existingRequest'));
+    }
+
+    /**
+     * @return array{0: int, 1: int|null}
+     */
+    protected function followerBounds(string $bucket): array
+    {
+        return match ($bucket) {
+            'under_10k' => [0, 9999],
+            '10_50k' => [10000, 49999],
+            '50_200k' => [50000, 199999],
+            '200k_plus' => [200000, null],
+            default => [0, null],
+        };
     }
 }
