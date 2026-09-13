@@ -70,6 +70,16 @@ class User extends Authenticatable
         return $this->hasMany(ContactRequest::class, 'from_user_id');
     }
 
+    public function brandProjects(): HasMany
+    {
+        return $this->hasMany(BrandProject::class, 'brand_user_id');
+    }
+
+    public function projectApplications(): HasMany
+    {
+        return $this->hasMany(ProjectApplication::class, 'kol_user_id');
+    }
+
     public function receivedContactRequests(): HasMany
     {
         return $this->hasMany(ContactRequest::class, 'to_user_id');

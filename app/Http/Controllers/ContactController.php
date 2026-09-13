@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Collaboration;
 use App\Models\ContactRequest;
 use App\Models\Conversation;
 use App\Models\Message;
@@ -76,11 +77,32 @@ class ContactController extends Controller
             ]
         );
 
-        Message::query()->create([
-            'conversation_id' => $conversation->id,
-            'user_id' => $contactRequest->from_user_id,
-            'body' => $contactRequest->message,
-        ]);
+        Message::query()->firstOrCreate(
+            [
+                'conversation_id' => $conversation->id,
+                'user_id' => $contactRequest->from_user_id,
+                'body' => $contactRequest->message,
+            ]
+        );
+
+        $from = $contactRequest->fromUser;
+        $to = $contactRequest->toUser;
+        if (($from->isBrand() && $to->isKol()) || ($from->isKol() && $to->isBrand())) {
+            $brand = $from->isBrand() ? $from : $to;
+            $kol = $from->isKol() ? $from : $to;
+
+            Collaboration::query()->firstOrCreate(
+                ['contact_request_id' => $contactRequest->id],
+                [
+                    'brand_user_id' => $brand->id,
+                    'kol_user_id' => $kol->id,
+                    'conversation_id' => $conversation->id,
+                    'updated_by_user_id' => auth()->id(),
+                    'title' => '直接合作邀請',
+                    'status' => 'negotiating',
+                ]
+            );
+        }
 
         return redirect()->route('conversations.show', $conversation)->with('status', '已接受，可以開始對話。');
     }

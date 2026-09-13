@@ -3,10 +3,13 @@
 namespace Database\Seeders;
 
 use App\Models\BrandProfile;
+use App\Models\KolAiTag;
+use App\Models\KolCardLink;
 use App\Models\KolProfile;
 use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -263,11 +266,16 @@ class DatabaseSeeder extends Seeder
                 $photos[] = $this->photoUrl($data['provider_id'].'-'.$i);
             }
 
-            KolProfile::query()->updateOrCreate(
+            $profile = KolProfile::query()->updateOrCreate(
                 ['user_id' => $user->id],
                 [
                     'display_name' => $data['display_name'],
+                    'slug' => Str::slug($data['display_name']) ?: 'kol-'.$user->id,
                     'bio' => $data['bio'],
+                    'card_headline' => $this->headlineFor($data),
+                    'external_contact_url' => isset($data['social'][0])
+                        ? $this->socialUrl($data['social'][0][0], $data['social'][0][1])
+                        : null,
                     'niches' => $data['niches'],
                     'regions' => $data['regions'],
                     'languages' => $data['languages'],
@@ -281,12 +289,56 @@ class DatabaseSeeder extends Seeder
 
             foreach ($data['social'] as [$platform, $handle, $followers]) {
                 SocialAccount::query()->updateOrCreate(
-                    ['user_id' => $user->id, 'platform' => $platform],
+                    ['user_id' => $user->id, 'platform' => $platform, 'handle' => $handle],
                     [
+                        'account_type' => 'manual',
                         'handle' => $handle,
                         'follower_count' => $followers,
                         'metrics_json' => ['source' => 'seed'],
                         'synced_at' => now(),
+                    ]
+                );
+
+                KolCardLink::query()->updateOrCreate(
+                    [
+                        'kol_profile_id' => $profile->id,
+                        'url' => $this->socialUrl($platform, $handle),
+                    ],
+                    [
+                        'title' => ucfirst($platform),
+                        'type' => $platform,
+                        'sort_order' => 10 + ($platform === 'instagram' ? 0 : 10),
+                        'is_active' => true,
+                    ]
+                );
+
+                KolAiTag::query()->updateOrCreate(
+                    [
+                        'kol_profile_id' => $profile->id,
+                        'category' => 'platform',
+                        'label' => ucfirst($platform),
+                    ],
+                    [
+                        'status' => 'approved',
+                        'confidence' => 75,
+                        'rationale' => 'Seed demo tag based on social account.',
+                        'source' => 'seed',
+                    ]
+                );
+            }
+
+            foreach ($this->approvedTagsFor($data) as [$category, $label, $confidence]) {
+                KolAiTag::query()->updateOrCreate(
+                    [
+                        'kol_profile_id' => $profile->id,
+                        'category' => $category,
+                        'label' => $label,
+                    ],
+                    [
+                        'status' => 'approved',
+                        'confidence' => $confidence,
+                        'rationale' => 'Seed demo tag based on profile niche and region.',
+                        'source' => 'seed',
                     ]
                 );
             }
@@ -393,5 +445,59 @@ class DatabaseSeeder extends Seeder
     protected function photoUrl(string $seed): string
     {
         return 'https://picsum.photos/seed/'.rawurlencode($seed).'/800/1000';
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function headlineFor(array $data): string
+    {
+        return implode(' / ', array_slice($data['niches'], 0, 2)).' · '.implode('、', $data['regions']).' creator';
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<int, array{0: string, 1: string, 2: int}>
+     */
+    protected function approvedTagsFor(array $data): array
+    {
+        $tags = [];
+
+        foreach ($data['niches'] as $niche) {
+            $tags[] = ['content', $this->normalizedTag($niche), 78];
+        }
+
+        foreach ($data['regions'] as $region) {
+            $tags[] = ['region', $region, 74];
+        }
+
+        if (in_array('香港', $data['regions'], true)) {
+            $tags[] = ['audience', '香港本地生活消費', 70];
+        }
+
+        return array_values(array_unique($tags, SORT_REGULAR));
+    }
+
+    protected function normalizedTag(string $niche): string
+    {
+        return match ($niche) {
+            '美妝', '護膚' => '美妝護膚',
+            '健身', '運動' => '健身健康',
+            '美食' => '餐飲美食',
+            '旅遊', '戶外' => '旅遊生活',
+            '時尚' => '時尚穿搭',
+            '科技' => '科技產品',
+            default => $niche,
+        };
+    }
+
+    protected function socialUrl(string $platform, string $handle): string
+    {
+        return match ($platform) {
+            'instagram' => 'https://instagram.com/'.$handle,
+            'facebook' => 'https://facebook.com/'.$handle,
+            'youtube' => 'https://www.youtube.com/@'.$handle,
+            default => 'https://'.$handle,
+        };
     }
 }

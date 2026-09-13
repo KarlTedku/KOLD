@@ -15,7 +15,7 @@ class ConversationController extends Controller
         $userId = auth()->id();
 
         $conversations = Conversation::query()
-            ->with(['userOne', 'userTwo', 'messages' => fn ($q) => $q->latest()->limit(1)])
+            ->with(['userOne', 'userTwo', 'collaboration', 'messages' => fn ($q) => $q->latest()->limit(1)])
             ->where(function ($q) use ($userId) {
                 $q->where('user_one_id', $userId)->orWhere('user_two_id', $userId);
             })
@@ -29,7 +29,7 @@ class ConversationController extends Controller
     {
         $this->authorizeParticipant($conversation);
 
-        $conversation->load(['messages.user', 'userOne', 'userTwo']);
+        $conversation->load(['messages.user', 'userOne', 'userTwo', 'collaboration.project']);
 
         return view('conversations.show', [
             'conversation' => $conversation,

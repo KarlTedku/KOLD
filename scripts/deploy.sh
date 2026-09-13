@@ -15,6 +15,10 @@ fi
 
 echo "Deploying $ROOT -> $USER@$HOST:/var/www/kold"
 
+BACKUP_STAMP="$(date +%Y%m%d-%H%M%S)"
+"${SSH[@]}" "$USER@$HOST" "set -e; BACKUP_DIR=/var/backups/kold/$BACKUP_STAMP; mkdir -p \"\$BACKUP_DIR\"; cp /var/www/kold/database/database.sqlite \"\$BACKUP_DIR/database.sqlite\"; cp /var/www/kold/.env \"\$BACKUP_DIR/.env\"; tar --exclude=vendor --exclude=node_modules --exclude=storage/logs --exclude=storage/framework --exclude=database/database.sqlite -czf \"\$BACKUP_DIR/app.tar.gz\" -C /var/www/kold .; cd /var/www/kold; php artisan down --retry=60"
+echo "Backup created at /var/backups/kold/$BACKUP_STAMP"
+
 rsync -az --delete \
   --exclude='.env' \
   --exclude='.git' \
@@ -23,6 +27,7 @@ rsync -az --delete \
   --exclude='database/database.sqlite' \
   --exclude='storage/logs/*' \
   --exclude='storage/framework/cache/data/*' \
+  --exclude='storage/framework/down' \
   --exclude='storage/framework/sessions/*' \
   --exclude='storage/framework/views/*' \
   --exclude='IGFB-Test.html' \
@@ -36,13 +41,12 @@ set -euo pipefail
 cd /var/www/kold
 composer install --no-dev --optimize-autoloader --no-interaction
 php artisan migrate --force
-php artisan db:seed --force
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 mkdir -p storage/framework/{cache/data,sessions,views} storage/logs bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache database
-systemctl reload nginx
+php artisan up
 echo DEPLOY_OK
 EOF
 

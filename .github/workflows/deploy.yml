@@ -28,6 +28,23 @@ jobs:
           chmod 600 ~/.ssh/kold_deploy
           ssh-keyscan -H "$KOLD_DEPLOY_HOST" >> ~/.ssh/known_hosts
 
+      - name: Backup production and enable maintenance mode
+        env:
+          KOLD_DEPLOY_HOST: ${{ secrets.KOLD_DEPLOY_HOST }}
+        run: |
+          ssh -i ~/.ssh/kold_deploy -o IdentitiesOnly=yes "root@${KOLD_DEPLOY_HOST}" 'bash -s' <<'EOF'
+          set -euo pipefail
+          stamp=$(date +%Y%m%d-%H%M%S)
+          backup="/var/backups/kold/$stamp"
+          mkdir -p "$backup"
+          cp /var/www/kold/database/database.sqlite "$backup/database.sqlite"
+          cp /var/www/kold/.env "$backup/.env"
+          tar --exclude=vendor --exclude=node_modules --exclude=storage/logs --exclude=storage/framework --exclude=database/database.sqlite -czf "$backup/app.tar.gz" -C /var/www/kold .
+          cd /var/www/kold
+          php artisan down --retry=60
+          echo "Backup created at $backup"
+          EOF
+
       - name: Rsync application
         env:
           KOLD_DEPLOY_HOST: ${{ secrets.KOLD_DEPLOY_HOST }}
@@ -40,6 +57,7 @@ jobs:
             --exclude='database/database.sqlite' \
             --exclude='storage/logs/*' \
             --exclude='storage/framework/cache/data/*' \
+            --exclude='storage/framework/down' \
             --exclude='storage/framework/sessions/*' \
             --exclude='storage/framework/views/*' \
             --exclude='IGFB-Test.html' \
@@ -57,13 +75,12 @@ jobs:
           cd /var/www/kold
           composer install --no-dev --optimize-autoloader --no-interaction
           php artisan migrate --force
-          php artisan db:seed --force
           php artisan config:cache
           php artisan route:cache
           php artisan view:cache
           mkdir -p storage/framework/{cache/data,sessions,views} storage/logs bootstrap/cache
           chown -R www-data:www-data storage bootstrap/cache database
-          systemctl reload nginx
+          php artisan up
           echo DEPLOY_OK
           EOF
 

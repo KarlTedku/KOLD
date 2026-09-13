@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'contact_request_id',
@@ -34,8 +35,13 @@ class Conversation extends Model
         return $this->belongsTo(User::class, 'user_two_id');
     }
 
-    public function otherParty(\App\Models\User $user): User
+    public function otherParty(User $user): User
     {
         return $this->user_one_id === $user->id ? $this->userTwo : $this->userOne;
+    }
+
+    public function collaboration(): HasOne
+    {
+        return $this->hasOne(Collaboration::class);
     }
 }

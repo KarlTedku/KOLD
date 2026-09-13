@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\SocialSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -38,7 +39,7 @@ class SocialAuthController extends Controller
         return $driver->redirect();
     }
 
-    public function callback(string $provider): RedirectResponse
+    public function callback(string $provider, Request $request, SocialSyncService $sync): RedirectResponse
     {
         $this->assertProvider($provider);
 
@@ -46,6 +47,10 @@ class SocialAuthController extends Controller
             $socialUser = Socialite::driver($provider)->user();
         } catch (InvalidStateException|\Throwable $e) {
             return redirect()->route('home')->with('error', '登入失敗，請再試一次。');
+        }
+
+        if ($provider === 'facebook' && $request->session()->get('social_connect.provider') === 'facebook') {
+            return $this->handleFacebookConnectCallback($request, $sync, (string) $socialUser->token);
         }
 
         $user = User::query()
@@ -80,6 +85,8 @@ class SocialAuthController extends Controller
 
     public function demoLogin(Request $request): RedirectResponse
     {
+        abort_unless(config('kold.demo_login_enabled'), 404);
+
         $role = $request->validate([
             'role' => ['required', 'in:kol,brand'],
         ])['role'];
@@ -129,5 +136,39 @@ class SocialAuthController extends Controller
 
         return filled($clientId) && filled($clientSecret)
             && ! str_starts_with((string) $clientId, 'REPLACE_');
+    }
+
+    protected function handleFacebookConnectCallback(Request $request, SocialSyncService $sync, string $accessToken): RedirectResponse
+    {
+        if (! Auth::check()) {
+            $request->session()->forget('social_connect');
+
+            return redirect()->route('home')->with('error', '請先登入 KOLD，再連結 Meta／IG。');
+        }
+
+        try {
+            $candidates = $sync->facebookPageInstagramCandidates($accessToken);
+        } catch (\Throwable $e) {
+            $request->session()->forget('social_connect');
+
+            return redirect()->route('social.index')->with('error', $e->getMessage());
+        }
+
+        $connectable = collect($candidates)
+            ->filter(fn (array $candidate) => is_array($candidate['instagram'] ?? null))
+            ->values()
+            ->all();
+
+        if ($connectable === []) {
+            $request->session()->forget('social_connect');
+
+            return redirect()
+                ->route('social.index')
+                ->with('error', '此 Facebook 帳號暫時未找到已連結的 Instagram Business／Creator 帳號。請確認 IG 已連到 Facebook Page。');
+        }
+
+        $request->session()->put('meta_connect_candidates', $connectable);
+
+        return redirect()->route('social.meta.select');
     }
 }

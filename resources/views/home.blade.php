@@ -15,6 +15,7 @@
     </div>
 </section>
 
+@if (config('kold.demo_login_enabled'))
 <section class="section">
     <h2>先體驗完整流程</h2>
     <p class="lead">SSO 金鑰尚未設定時，可用示範帳號走完建檔、探索與聯絡請求。</p>
@@ -35,6 +36,7 @@
         </form>
     </div>
 </section>
+@endif
 @endsection
 
 @section('scripts')

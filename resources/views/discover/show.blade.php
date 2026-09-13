@@ -31,6 +31,14 @@
                         <span class="chip">{{ $tag }}</span>
                     @endforeach
                 </div>
+                @if ($user->kolProfile->approvedAiTags->isNotEmpty())
+                    <h3 style="margin:1rem 0 .5rem;font-family:var(--font-display)">AI 確認標籤</h3>
+                    <div class="meta">
+                        @foreach ($user->kolProfile->approvedAiTags as $tag)
+                            <span class="chip">{{ $tag->label }}</span>
+                        @endforeach
+                    </div>
+                @endif
                 <p style="margin-top:1rem;opacity:.75">
                     語言：{{ implode('、', $user->kolProfile->languages ?? []) ?: '—' }}
                 </p>
@@ -45,6 +53,11 @@
                             <img src="{{ $photo }}" alt="作品">
                         @endforeach
                     </div>
+                @endif
+                @if ($user->kolProfile->slug)
+                    <p style="margin-top:1rem">
+                        <a class="btn btn-soft" href="{{ route('kol-card.show', $user->kolProfile->slug) }}" target="_blank">查看 KOL 卡片</a>
+                    </p>
                 @endif
             @elseif ($user->isBrand() && $user->brandProfile)
                 <p>{{ $user->brandProfile->bio }}</p>
@@ -63,7 +76,7 @@
                 @foreach ($user->socialAccounts as $account)
                     <div class="meta" style="margin-bottom:.4rem">
                         <span class="chip">{{ $account->platform }}</span>
-                        <span>@{{ $account->handle }} · {{ number_format((int) $account->follower_count) }} 粉絲</span>
+                        <span>{{ '@'.$account->handle }} · {{ number_format((int) $account->follower_count) }} 粉絲</span>
                     </div>
                 @endforeach
             </div>

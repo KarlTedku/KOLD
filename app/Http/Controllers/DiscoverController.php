@@ -22,7 +22,7 @@ class DiscoverController extends Controller
 
         if ($user->isBrand()) {
             $profiles = KolProfile::query()
-                ->with(['user.socialAccounts'])
+                ->with(['user.socialAccounts', 'approvedAiTags'])
                 ->where('status', 'published')
                 ->when($q !== '', function ($query) use ($q) {
                     $query->where(function ($inner) use ($q) {
@@ -106,7 +106,7 @@ class DiscoverController extends Controller
     {
         abort_unless($user->isPublished(), 404);
 
-        $user->load(['kolProfile', 'brandProfile', 'socialAccounts']);
+        $user->load(['kolProfile.approvedAiTags', 'brandProfile', 'socialAccounts']);
 
         $existingRequest = null;
         if (auth()->check() && auth()->id() !== $user->id) {

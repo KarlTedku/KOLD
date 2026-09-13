@@ -9,11 +9,33 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    public function edit(): View
+    public function edit(Request $request): View
     {
-        $user = auth()->user()->load(['kolProfile', 'brandProfile', 'socialAccounts']);
+        $user = auth()->user()->load([
+            'kolProfile.cardLinks',
+            'kolProfile.aiTags',
+            'brandProfile',
+            'socialAccounts',
+        ]);
 
-        return view('profile.edit', compact('user'));
+        $steps = ['profile', 'card', 'links', 'tags', 'preview'];
+        $step = in_array($request->query('step'), $steps, true)
+            ? $request->query('step')
+            : 'profile';
+
+        $progress = [];
+        if ($user->isKol()) {
+            $profile = $user->kolProfile;
+            $progress = [
+                'profile' => filled($profile?->display_name) && filled($profile?->bio),
+                'card' => filled($profile?->slug) && filled($profile?->card_headline),
+                'links' => (bool) $profile?->cardLinks->contains('is_active', true),
+                'tags' => (bool) $profile?->aiTags->contains('status', 'approved'),
+                'preview' => $profile?->status === 'published',
+            ];
+        }
+
+        return view('profile.edit', compact('user', 'step', 'progress'));
     }
 
     public function update(Request $request): RedirectResponse
@@ -31,8 +53,11 @@ class ProfileController extends Controller
                 'photos' => ['nullable', 'string', 'max:4000'],
                 'rate_min' => ['nullable', 'integer', 'min:0'],
                 'rate_max' => ['nullable', 'integer', 'min:0'],
-                'status' => ['required', 'in:draft,published'],
             ]);
+
+            if (filled($data['rate_min'] ?? null) && filled($data['rate_max'] ?? null) && (int) $data['rate_max'] < (int) $data['rate_min']) {
+                return back()->withErrors(['rate_max' => '報價上限必須大於或等於報價下限。'])->withInput();
+            }
 
             $user->kolProfile()->updateOrCreate(
                 ['user_id' => $user->id],
@@ -46,9 +71,12 @@ class ProfileController extends Controller
                     'photos' => $this->splitList($data['photos'] ?? null),
                     'rate_min' => $data['rate_min'] ?? null,
                     'rate_max' => $data['rate_max'] ?? null,
-                    'status' => $data['status'],
+                    'status' => $user->kolProfile?->status ?? 'draft',
                 ]
             );
+
+            return redirect()->route('profile.edit', ['step' => 'card'])
+                ->with('status', '基本資料已儲存。');
         } else {
             $data = $request->validate([
                 'company_name' => ['required', 'string', 'max:120'],

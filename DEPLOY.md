@@ -52,6 +52,7 @@ rsync -az --delete \
   --exclude='database/database.sqlite' \
   --exclude='storage/logs/*' \
   --exclude='storage/framework/cache/data/*' \
+  --exclude='storage/framework/down' \
   --exclude='storage/framework/sessions/*' \
   --exclude='storage/framework/views/*' \
   --exclude='IGFB-Test.html' \
@@ -64,15 +65,15 @@ set -euo pipefail
 cd /var/www/kold
 composer install --no-dev --optimize-autoloader --no-interaction
 php artisan migrate --force
-php artisan db:seed --force
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 mkdir -p storage/framework/{cache/data,sessions,views} storage/logs bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache database
-systemctl reload nginx
 EOF
 ```
+
+Production deploys must not run `db:seed`. Demo data is for local development only. `scripts/deploy.sh` creates timestamped backups under `/var/backups/kold/` before enabling maintenance mode.
 
 Preserve `/var/www/kold/.env` on the server. Never rsync a local `.env` over it.
 

@@ -89,6 +89,13 @@
                                 <span class="chip">{{ $account->platform }} {{ number_format((int) $account->follower_count) }}</span>
                             @endforeach
                         </div>
+                        @if ($profile->approvedAiTags->isNotEmpty())
+                            <div class="meta" style="margin-top:.45rem">
+                                @foreach ($profile->approvedAiTags->take(3) as $tag)
+                                    <span class="chip">{{ $tag->label }}</span>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                 @else
                     <div class="discover-card-body" style="padding-top:1.1rem">

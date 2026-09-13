@@ -1,4 +1,12 @@
-# KOLD — 下一步功能清單（明日優先）
+# KOLD — 下一步功能清單
+
+> Current product source of truth: [docs/PRODUCT_REQUIREMENTS.md](docs/PRODUCT_REQUIREMENTS.md)
+>
+> Visual roadmap and prioritized backlog: [docs/PRODUCT_ROADMAP.md](docs/PRODUCT_ROADMAP.md)
+>
+> This file contains older sprint notes. Use the PRD for current product direction and roadmap.
+
+---
 
 目標：登入接好之後，**品牌可以篩選瀏覽 KOL**；先用豐富假資料把體驗填滿，唔使等真社群 API。
 
