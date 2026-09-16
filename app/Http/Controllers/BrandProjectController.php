@@ -211,7 +211,12 @@ class BrandProjectController extends Controller
      */
     protected function mergeOtherSelection(array $selected, ?string $other): array
     {
+        $includesOther = in_array('other', $selected, true);
         $selected = array_values(array_filter($selected, fn (string $value): bool => $value !== 'other'));
+
+        if (! $includesOther) {
+            return $selected;
+        }
 
         return array_values(array_unique([...$selected, ...$this->splitList($other ?? '')]));
     }

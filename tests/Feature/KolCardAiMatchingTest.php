@@ -145,6 +145,36 @@ class KolCardAiMatchingTest extends TestCase
         $this->assertSame(10000, $profile->rate_max);
     }
 
+    public function test_unchecking_other_removes_existing_custom_profile_values(): void
+    {
+        $kol = User::factory()->create(['role' => 'kol']);
+        $profile = KolProfile::query()->create([
+            'user_id' => $kol->id,
+            'display_name' => 'Custom Creator',
+            'niches' => ['科技數碼', '汽車'],
+            'regions' => ['香港', '澳洲'],
+            'languages' => ['粵語', '德語'],
+            'status' => 'draft',
+        ]);
+
+        $this->actingAs($kol)
+            ->put(route('profile.update'), [
+                'display_name' => 'Custom Creator',
+                'niches' => ['科技數碼'],
+                'niches_other' => '汽車',
+                'regions' => ['香港'],
+                'regions_other' => '澳洲',
+                'languages' => ['粵語'],
+                'languages_other' => '德語',
+            ])
+            ->assertRedirect(route('profile.edit', ['step' => 'card']));
+
+        $profile->refresh();
+        $this->assertSame(['科技數碼'], $profile->niches);
+        $this->assertSame(['香港'], $profile->regions);
+        $this->assertSame(['粵語'], $profile->languages);
+    }
+
     public function test_structured_profile_choices_reject_invalid_or_incomplete_values(): void
     {
         $kol = User::factory()->create(['role' => 'kol']);
