@@ -22,9 +22,11 @@ Only touch KOLD paths above.
 
 **Do not** edit or restart other apps under `/var/www/*` (for example `social-tedku`, `fatemap`, `chatinsights`, …) or other files in `/etc/nginx/sites-enabled/` except `kold.tedku.cloud`.
 
-## Preferred: automatic deploy
+## Preferred: CI-gated automatic deploy
 
-Pushing to **`main`** runs [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
+A Pull Request must first pass [`.github/workflows/ci.yml`](.github/workflows/ci.yml). After it is merged, the successful **CI** run on `main` triggers [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
+
+The deploy workflow does not cancel an in-progress production deployment. This prevents a newer commit from interrupting an older release after maintenance mode has started.
 
 Required GitHub Actions secrets (repo → Settings → Secrets):
 

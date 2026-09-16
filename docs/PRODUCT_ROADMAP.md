@@ -2,7 +2,9 @@
 
 [繁體中文版](PRODUCT_ROADMAP_ZH_HANT.md)
 
-Last updated: 2026-09-12
+[Engineering delivery roadmap](ENGINEERING_ROADMAP.md)
+
+Last updated: 2026-09-16
 
 ## Product North Star
 
@@ -21,7 +23,7 @@ KOLD helps KOLs build a reusable public identity and helps brands find, invite, 
 ```mermaid
 flowchart LR
     A[Foundation<br/>DONE] --> B[Controlled Beta<br/>CURRENT]
-    B --> C[Marketplace Loop<br/>NEXT]
+    B --> C[Marketplace Loop<br/>DONE / VALIDATING]
     C --> D[Public Beta<br/>NEXT]
     D --> E[Commercial Platform<br/>LATER]
 
@@ -74,7 +76,7 @@ flowchart TD
     BM --> REC[View explained KOL recommendations]
     REC --> VIEW[Review KOL profile and card]
     VIEW -->|Direct route| INVITE[Send invitation]
-    BP -->|Marketplace route, NEXT| POST[Post project]
+    BP -->|Marketplace route| POST[Post project]
     POST --> APPS[Review KOL applications]
 
     INV --> CHAT[Accepted opportunity opens conversation]
@@ -113,7 +115,7 @@ Sensitive demographic inference remains excluded. An OpenAI failure must fall ba
 | 0. Foundation | Working two-sided prototype | SSO, roles, profiles, Discover, invitations, conversations | Core tests pass and production is stable | DONE |
 | 1. KOL identity | KOL has a shareable reason to register | KOL Card, slug, links, draft preview, publish, AI tag approval | Public card works without Meta approval | DONE |
 | 2. Controlled beta | Real users can validate the proposition | Professional public KOL profile, Meta login fix, Page/IG test, App Review preparation, feedback loop | 5-20 invited KOLs publish and share a credible profile | CURRENT |
-| 3. Marketplace MVP | KOLs can proactively find work | Project posting, browsing, application, review, accepted conversation | One full brand-to-KOL project loop completes | NEXT |
+| 3. Marketplace MVP | KOLs can proactively find work | Project posting, filtered browsing, application, review, accepted conversation | One real brand-to-KOL project loop completes | DONE / VALIDATING |
 | 4. Public beta | Safe self-serve onboarding | PostgreSQL, moderation, reporting, notifications, monitoring | External users can join without manual support | NEXT |
 | 5. Commercial | Brand-funded sustainable product | Brand plans, limits, analytics, collaboration tracking | Pricing and payment model validated | LATER |
 
@@ -151,8 +153,8 @@ Sensitive demographic inference remains excluded. An OpenAI failure must fall ba
 | --- | --- | --- |
 | Privacy, terms, data deletion | DONE | Qualified legal review before commercial launch |
 | Production demo login disabled | DONE | None |
-| Automated tests and deployment backup | DONE | Add scheduled restore drill |
-| Source control release | NEXT | Commit and push current deployed source |
+| PR CI and deployment backup | DONE | CI covers SQLite, PostgreSQL, formatting, build and security; see the engineering roadmap for CD rollback |
+| Source control release | IN PROGRESS | Sprint 0 is turning the currently deployed functionality into a traceable release |
 | Database | BETA | SQLite is acceptable for controlled beta; migrate before public self-serve |
 | Admin moderation and abuse reports | NEXT | Required for public beta |
 | Monitoring and alerts | NEXT | Add error and availability monitoring |
@@ -187,7 +189,7 @@ Required for invited beta:
 
 The existing authenticated `/u/{user}` page remains the marketplace interaction page. Public visitors use `/k/{slug}`; login is required before sending an invitation or entering a conversation.
 
-### P1: Project Marketplace MVP
+### P1: Project Marketplace MVP (implemented; real-flow validation next)
 
 1. Brand project draft, edit, publish, close.
 2. Logged-in KOL project list and detail.
@@ -195,6 +197,8 @@ The existing authenticated `/u/{user}` page remains the marketplace interaction 
 4. Brand application inbox with accept and decline.
 5. Accepted application creates or reuses a conversation.
 6. Permission, ownership, duplicate-application, deadline, and status-transition tests.
+7. Complete one real publish, apply, review, accept, and conversation flow with Brand and KOL accounts.
+8. Record view-to-application, application-to-acceptance, and submission-failure rates.
 
 ### P2: Public Beta Readiness
 
