@@ -16,13 +16,29 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v5
         with:
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Verify CI revision is current main
+        if: github.event_name == 'workflow_run'
+        env:
+          CI_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          main_sha="$(git ls-remote origin refs/heads/main | cut -f1)"
+          test -n "$main_sha"
+          test "$CI_SHA" = "$main_sha"
 
       - name: Configure SSH
         env:

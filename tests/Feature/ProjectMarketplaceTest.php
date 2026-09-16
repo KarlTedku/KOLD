@@ -108,6 +108,32 @@ class ProjectMarketplaceTest extends TestCase
             ->assertSessionHasErrors('niches_other');
     }
 
+    public function test_unchecking_other_removes_existing_custom_project_values(): void
+    {
+        $brand = $this->brand();
+        $project = $this->project($brand, [
+            'status' => 'draft',
+            'niches' => ['美妝護膚', '汽車'],
+            'regions' => ['香港', '澳洲'],
+        ]);
+
+        $this->actingAs($brand)
+            ->from(route('projects.edit', $project))
+            ->put(route('projects.update', $project), [
+                'title' => $project->title,
+                'brief' => $project->brief,
+                'niches' => ['美妝護膚'],
+                'niches_other' => '汽車',
+                'regions' => ['香港'],
+                'regions_other' => '澳洲',
+            ])
+            ->assertRedirect(route('projects.edit', $project));
+
+        $project->refresh();
+        $this->assertSame(['美妝護膚'], $project->niches);
+        $this->assertSame(['香港'], $project->regions);
+    }
+
     public function test_validation_error_reopens_the_relevant_step_with_old_input(): void
     {
         $brand = $this->brand();

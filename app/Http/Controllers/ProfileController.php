@@ -181,9 +181,14 @@ class ProfileController extends Controller
      */
     protected function mergeOtherSelection(array $selected, ?string $other): array
     {
+        $includesOther = in_array('other', $selected, true);
+
         return collect($selected)
             ->reject(fn (string $value): bool => $value === 'other')
-            ->merge(preg_split('/[,，、]+/u', (string) $other) ?: [])
+            ->when(
+                $includesOther,
+                fn ($values) => $values->merge(preg_split('/[,，、]+/u', (string) $other) ?: [])
+            )
             ->map(fn (string $value): string => trim($value))
             ->filter()
             ->unique(fn (string $value): string => mb_strtolower($value))
