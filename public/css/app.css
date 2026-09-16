@@ -1282,49 +1282,90 @@ textarea { min-height: 120px; resize: vertical; }
 .collaboration-steps .is-complete span { background: var(--moss); border-color: var(--moss); color: #fff; }
 .collaboration-steps .is-current span { outline: 3px solid rgba(47,107,93,.2); }
 
+.kol-card-standalone {
+  background:
+    radial-gradient(900px 520px at 8% 0%, rgba(47, 107, 93, .2), transparent 62%),
+    radial-gradient(760px 460px at 100% 8%, rgba(227, 106, 74, .14), transparent 58%),
+    linear-gradient(145deg, #eef5f1 0%, #f7f4ee 50%, #eee7dc 100%);
+}
+.kol-card-shell { min-height: 100svh; }
 .card-page {
-  min-height: calc(100vh - 74px);
+  min-height: 100svh;
   display: grid;
-  place-items: start center;
-  padding: 3rem 1rem;
+  place-items: center;
+  padding: clamp(1rem, 4vw, 3rem);
+}
+.kol-card-frame { width: min(100%, 460px); }
+.kol-card-owner-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: .75rem;
+}
+.kol-card-owner-tools a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: .55rem .85rem;
+  border: 1px solid rgba(15, 28, 26, .13);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .72);
+  color: var(--forest);
+  font-size: .78rem;
+  font-weight: 700;
+  backdrop-filter: blur(10px);
+  transition: background .2s ease, border-color .2s ease, transform .2s ease;
+}
+.kol-card-owner-tools a:hover {
+  border-color: rgba(47, 107, 93, .3);
+  background: rgba(255, 255, 255, .94);
+  transform: translateY(-1px);
+}
+.kol-card-owner-tools a:focus-visible,
+.kol-card a:focus-visible {
+  outline: 3px solid rgba(47, 107, 93, .28);
+  outline-offset: 3px;
 }
 .kol-card {
-  width: min(100%, 430px);
+  width: 100%;
   text-align: center;
-  background: rgba(255,255,255,.82);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 2rem 1.25rem 1.35rem;
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, .9);
+  border: 1px solid rgba(15, 28, 26, .1);
+  border-radius: 24px;
+  padding: clamp(1.6rem, 5vw, 2.35rem) clamp(1.15rem, 5vw, 1.8rem) 1.4rem;
+  box-shadow: 0 30px 80px rgba(15, 28, 26, .16);
+  backdrop-filter: blur(14px);
 }
 .kol-card-avatar {
-  width: 108px;
-  height: 108px;
+  width: 112px;
+  height: 112px;
   border-radius: 50%;
   object-fit: cover;
-  margin: 0 auto 1rem;
-  border: 4px solid rgba(255,255,255,.86);
+  margin: 0 auto 1.15rem;
+  border: 4px solid rgba(255, 255, 255, .96);
+  box-shadow: 0 12px 28px rgba(15, 28, 26, .14);
 }
 .kol-card h1 {
   font-family: var(--font-display);
-  font-size: 2rem;
-  margin: 0 0 .45rem;
+  font-size: clamp(1.9rem, 7vw, 2.25rem);
+  line-height: 1.1;
+  margin: 0 0 .55rem;
 }
 .kol-card-headline {
-  margin: 0 auto 1rem;
-  color: rgba(15,28,26,.72);
-  max-width: 22rem;
+  margin: 0 auto 1.05rem;
+  color: rgba(15, 28, 26, .68);
+  max-width: 23rem;
+  line-height: 1.6;
 }
-.kol-card-bio { margin: 1rem auto; max-width: 24rem; color: rgba(15,28,26,.78); line-height: 1.65; }
-.kol-card-languages { margin: .5rem 0; color: rgba(15,28,26,.58); font-size: .78rem; }
+.kol-card-taxonomy { justify-content: center; margin-top: 0; }
+.kol-card-bio { margin: 1.1rem auto; max-width: 24rem; color: rgba(15,28,26,.76); line-height: 1.7; }
+.kol-card-languages { margin: .65rem 0; color: rgba(15,28,26,.55); font-size: .78rem; }
 .kol-card-section { margin: 1.25rem 0; padding-top: 1.1rem; border-top: 1px solid var(--line); text-align: left; }
 .kol-card-section h2 { margin: 0 0 .7rem; font-family: var(--font-display); font-size: 1.15rem; }
 .kol-card-tags { justify-content: flex-start; }
 .kol-card-portfolio { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
-.kol-card-portfolio img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 6px; }
-.kol-card-rate { margin: 1rem 0; padding: .75rem; border: 1px solid var(--line); border-radius: 6px; background: rgba(47,107,93,.07); font-weight: 700; }
-.kol-card-cta { display: grid; gap: .6rem; margin-top: 1rem; }
+.kol-card-portfolio img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 12px; }
+.kol-card-cta { display: grid; gap: .6rem; margin-top: 1.1rem; }
+.kol-card-cta .btn { min-height: 48px; }
 .kol-card-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
@@ -1333,7 +1374,7 @@ textarea { min-height: 120px; resize: vertical; }
 }
 .kol-card-stats div {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: .65rem .5rem;
   background: rgba(47,107,93,.08);
 }
@@ -1368,9 +1409,19 @@ textarea { min-height: 120px; resize: vertical; }
 }
 .kol-card-powered {
   display: block;
-  margin-top: 1rem;
-  opacity: .55;
-  font-size: .82rem;
+  width: fit-content;
+  margin: 1.2rem auto 0;
+  color: rgba(15, 28, 26, .48);
+  font-size: .76rem;
+  font-weight: 600;
+}
+.kol-card-powered:hover { color: var(--forest); }
+
+@media (max-width: 520px) {
+  .card-page { align-items: start; padding: .85rem; }
+  .kol-card-owner-tools { margin-bottom: .6rem; }
+  .kol-card { border-radius: 20px; box-shadow: 0 18px 50px rgba(15, 28, 26, .13); }
+  .kol-card-avatar { width: 96px; height: 96px; }
 }
 
 .site-footer {

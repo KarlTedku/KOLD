@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.card')
 
 @section('title', $profile->display_name.' — KOLD Card')
 
@@ -9,26 +9,39 @@
     <meta property="og:type" content="profile">
     <meta property="og:url" content="{{ route('kol-card.show', $profile->slug) }}">
     @if ($profile->user->avatar)<meta property="og:image" content="{{ $profile->user->avatar }}">@endif
+    @if ($isPreview ?? false)<meta name="robots" content="noindex,nofollow">@endif
 @endsection
 
 @section('content')
+@php
+    $isOwner = auth()->check() && auth()->id() === $profile->user_id;
+    $canInvite = auth()->check() && auth()->user()->isBrand();
+    $showCardActions = $canInvite || ! auth()->check() || filled($profile->external_contact_url);
+@endphp
 <section class="card-page">
-    @if ($isPreview ?? false)
-        <div class="preview-banner">
-            <strong>私人預覽</strong>
-            <span>呢個畫面只供你檢查，未發布前其他人睇唔到。</span>
-            <a href="{{ route('profile.edit', ['step' => 'preview']) }}">返回設定</a>
-        </div>
-    @endif
-    <div class="kol-card">
+    <div class="kol-card-frame">
+        @if ($isPreview ?? false)
+            <div class="preview-banner" role="status">
+                <strong>私人預覽</strong>
+                <span>呢個畫面只供你檢查，未發布前其他人睇唔到。</span>
+            </div>
+        @endif
+
+        @if ($isOwner)
+            <nav class="kol-card-owner-tools" aria-label="卡片管理">
+                <a href="{{ route('profile.edit', ['step' => 'preview']) }}">返回編輯</a>
+            </nav>
+        @endif
+
+        <article class="kol-card" aria-labelledby="kol-card-name">
         @if ($profile->user->avatar)
             <img class="kol-card-avatar" src="{{ $profile->user->avatar }}" alt="{{ $profile->display_name }}">
         @endif
 
-        <h1>{{ $profile->display_name }}</h1>
+        <h1 id="kol-card-name">{{ $profile->display_name }}</h1>
         <p class="kol-card-headline">{{ $profile->card_headline ?: $profile->bio }}</p>
 
-        <div class="meta" style="justify-content:center">
+        <div class="meta kol-card-taxonomy">
             @foreach (($profile->niches ?? []) as $tag)
                 <span class="chip">{{ $tag }}</span>
             @endforeach
@@ -88,26 +101,22 @@
             </section>
         @endif
 
-        @if ($profile->rate_min || $profile->rate_max)
-            <p class="kol-card-rate">參考合作價：HK$ {{ number_format((int) ($profile->rate_min ?? 0)) }} - {{ number_format((int) ($profile->rate_max ?? 0)) }}</p>
+        @if ($showCardActions)
+            <div class="kol-card-cta">
+                @if ($canInvite)
+                    <a class="btn btn-primary" href="{{ route('discover.show', $profile->user) }}">發出合作邀請</a>
+                @elseif (! auth()->check())
+                    <a class="btn btn-primary" href="{{ route('home') }}#start">登入 KOLD 發合作邀請</a>
+                @endif
+
+                @if ($profile->external_contact_url)
+                    <a class="btn btn-soft" href="{{ $profile->external_contact_url }}" target="_blank" rel="noopener noreferrer">合作聯絡</a>
+                @endif
+            </div>
         @endif
 
-        <div class="kol-card-cta">
-            @auth
-                @if (auth()->id() === $profile->user_id)
-                    <a class="btn btn-primary" href="{{ route('profile.edit', ['step' => 'preview']) }}">編輯我的頁面</a>
-                @elseif (auth()->user()->isBrand())
-                    <a class="btn btn-primary" href="{{ route('discover.show', $profile->user) }}">發出合作邀請</a>
-                @endif
-            @else
-                <a class="btn btn-primary" href="{{ route('home') }}#start">登入 KOLD 發合作邀請</a>
-            @endauth
-            @if ($profile->external_contact_url)
-                <a class="btn btn-soft" href="{{ $profile->external_contact_url }}" target="_blank" rel="noopener noreferrer">合作聯絡</a>
-            @endif
-        </div>
-
         <a class="kol-card-powered" href="{{ route('home') }}">Powered by KOLD</a>
+        </article>
     </div>
 </section>
 @endsection

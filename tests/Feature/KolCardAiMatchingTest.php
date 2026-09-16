@@ -49,6 +49,48 @@ class KolCardAiMatchingTest extends TestCase
             ->assertDontSee('Hidden Link');
     }
 
+    public function test_public_kol_card_is_standalone_and_hides_internal_rate(): void
+    {
+        $kol = User::factory()->create(['role' => 'kol']);
+        KolProfile::query()->create([
+            'user_id' => $kol->id,
+            'display_name' => 'Standalone Creator',
+            'slug' => 'standalone-creator',
+            'bio' => '分享香港生活內容。',
+            'rate_min' => 3000,
+            'rate_max' => 8000,
+            'status' => 'published',
+        ]);
+
+        $this->get(route('kol-card.show', 'standalone-creator'))
+            ->assertOk()
+            ->assertSee('kol-card-standalone', false)
+            ->assertSee('Powered by KOLD')
+            ->assertDontSee('參考合作價')
+            ->assertDontSee('HK$')
+            ->assertDontSee('合作項目')
+            ->assertDontSee('我的檔案')
+            ->assertDontSee('<header', false)
+            ->assertDontSee('<footer', false);
+    }
+
+    public function test_card_owner_gets_a_discreet_edit_link_outside_the_shared_card(): void
+    {
+        $kol = User::factory()->create(['role' => 'kol']);
+        KolProfile::query()->create([
+            'user_id' => $kol->id,
+            'display_name' => 'Card Owner',
+            'slug' => 'card-owner-public',
+            'status' => 'published',
+        ]);
+
+        $this->actingAs($kol)
+            ->get(route('kol-card.show', 'card-owner-public'))
+            ->assertOk()
+            ->assertSee('返回編輯')
+            ->assertDontSee('編輯我的頁面');
+    }
+
     public function test_draft_kol_card_is_not_public(): void
     {
         $kol = User::factory()->create(['role' => 'kol']);
