@@ -21,7 +21,7 @@ class ProjectApplicationController extends Controller
         abort_unless($project->isOpen(), 422);
 
         $data = $request->validate([
-            'pitch' => ['required', 'string', 'min:20', 'max:3000'],
+            'pitch' => ['required', 'string', 'max:3000'],
             'proposed_rate' => ['nullable', 'integer', 'min:0'],
         ]);
 

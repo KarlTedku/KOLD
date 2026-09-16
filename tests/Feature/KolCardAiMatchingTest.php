@@ -101,6 +101,115 @@ class KolCardAiMatchingTest extends TestCase
         ]);
     }
 
+    public function test_kol_profile_uses_structured_choices(): void
+    {
+        $kol = User::factory()->create(['role' => 'kol']);
+
+        $this->actingAs($kol)
+            ->get(route('profile.edit', ['step' => 'profile']))
+            ->assertOk()
+            ->assertSee('name="niches[]"', false)
+            ->assertSee('name="regions[]"', false)
+            ->assertSee('name="languages[]"', false)
+            ->assertSee('name="rate_range"', false)
+            ->assertSee('美妝護膚')
+            ->assertSee('香港')
+            ->assertSee('粵語')
+            ->assertSee('HK$5,000–10,000');
+    }
+
+    public function test_kol_can_save_structured_profile_choices_and_custom_values(): void
+    {
+        $kol = User::factory()->create(['role' => 'kol']);
+
+        $this->actingAs($kol)
+            ->put(route('profile.update'), [
+                'display_name' => 'Structured Creator',
+                'bio' => '分享科技產品、汽車體驗同日常生活內容。',
+                'niches' => ['科技數碼', 'other'],
+                'niches_other' => '汽車、汽車',
+                'regions' => ['香港', '日本'],
+                'languages' => ['粵語', '英語', 'other'],
+                'languages_other' => '德語',
+                'age_range' => '45-54',
+                'rate_range' => '5000_10000',
+            ])
+            ->assertRedirect(route('profile.edit', ['step' => 'card']));
+
+        $profile = $kol->kolProfile()->firstOrFail();
+        $this->assertSame(['科技數碼', '汽車'], $profile->niches);
+        $this->assertSame(['香港', '日本'], $profile->regions);
+        $this->assertSame(['粵語', '英語', '德語'], $profile->languages);
+        $this->assertSame('45-54', $profile->age_range);
+        $this->assertSame(5000, $profile->rate_min);
+        $this->assertSame(10000, $profile->rate_max);
+    }
+
+    public function test_structured_profile_choices_reject_invalid_or_incomplete_values(): void
+    {
+        $kol = User::factory()->create(['role' => 'kol']);
+
+        $this->actingAs($kol)
+            ->from(route('profile.edit', ['step' => 'profile']))
+            ->put(route('profile.update'), [
+                'display_name' => 'Invalid Creator',
+                'niches' => ['科技數碼', '科技數碼'],
+                'regions' => ['not-a-region'],
+                'languages' => ['other'],
+                'languages_other' => '',
+                'age_range' => '99+',
+                'rate_range' => 'free-text-rate',
+            ])
+            ->assertRedirect(route('profile.edit', ['step' => 'profile']))
+            ->assertSessionHasErrors([
+                'niches.1',
+                'regions.0',
+                'languages_other',
+                'age_range',
+                'rate_range',
+            ]);
+
+        $this->assertNull($kol->kolProfile);
+    }
+
+    public function test_legacy_profile_values_are_mapped_to_structured_choices(): void
+    {
+        $kol = User::factory()->create(['role' => 'kol']);
+        $profile = KolProfile::query()->create([
+            'user_id' => $kol->id,
+            'display_name' => 'Legacy Creator',
+            'niches' => ['IT科技'],
+            'regions' => ['香港'],
+            'languages' => ['英文'],
+            'rate_min' => 3000,
+            'rate_max' => 12000,
+            'status' => 'draft',
+        ]);
+
+        $this->actingAs($kol)
+            ->get(route('profile.edit', ['step' => 'profile']))
+            ->assertOk()
+            ->assertSee('value="科技數碼" checked', false)
+            ->assertSee('value="英語" checked', false)
+            ->assertSee('保留現有：HK$3,000–12,000');
+
+        $this->actingAs($kol)
+            ->put(route('profile.update'), [
+                'display_name' => 'Legacy Creator',
+                'niches' => ['科技數碼'],
+                'regions' => ['香港'],
+                'languages' => ['英語'],
+                'rate_range' => 'existing',
+            ])
+            ->assertRedirect();
+
+        $profile->refresh();
+        $this->assertSame(['科技數碼'], $profile->niches);
+        $this->assertSame(['英語'], $profile->languages);
+        $this->assertSame(3000, $profile->rate_min);
+        $this->assertSame(12000, $profile->rate_max);
+    }
+
     public function test_card_requires_an_active_link_before_publish_and_can_be_unpublished(): void
     {
         $kol = User::factory()->create(['role' => 'kol']);

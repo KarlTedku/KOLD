@@ -1,5 +1,26 @@
 <?php
 
+$contentCategories = [
+    '美妝護膚' => '美妝護膚',
+    '時尚穿搭' => '時尚穿搭',
+    '餐飲美食' => '餐飲美食',
+    '旅遊生活' => '旅遊生活',
+    '健身健康' => '健身健康',
+    '親子家庭' => '親子家庭',
+    '科技數碼' => '科技數碼',
+    '家居生活' => '家居生活',
+    '財經商業' => '財經商業',
+    '寵物' => '寵物',
+];
+
+$projectRegions = [
+    '香港' => '香港',
+    '澳門' => '澳門',
+    '台灣' => '台灣',
+    '新加坡' => '新加坡',
+    '馬來西亞' => '馬來西亞',
+];
+
 return [
     'demo_login_enabled' => (bool) env(
         'DEMO_LOGIN_ENABLED',
@@ -8,4 +29,118 @@ return [
 
     'operator_name' => env('KOLD_OPERATOR_NAME', 'Tedku Solution'),
     'support_email' => env('KOLD_SUPPORT_EMAIL', env('MAIL_FROM_ADDRESS', 'hello@kold.tedku.cloud')),
+
+    'project_options' => [
+        'campaign_objectives' => [
+            'brand_awareness' => '品牌知名度',
+            'product_launch' => '新品／服務推廣',
+            'content_creation' => '內容製作',
+            'conversion' => '帶動銷售／登記',
+            'event_promotion' => '活動宣傳',
+            'other' => '其他',
+        ],
+        'niches' => $contentCategories,
+        'regions' => $projectRegions,
+        'platforms' => [
+            'instagram' => 'Instagram',
+            'facebook' => 'Facebook',
+            'youtube' => 'YouTube',
+        ],
+        'collaboration_formats' => [
+            'short_video' => '短影片',
+            'photo_post' => '圖片帖文',
+            'story' => '限時動態',
+            'long_video' => '長影片',
+            'live_stream' => '直播',
+            'event_attendance' => '活動出席',
+            'product_review' => '產品試用／評測',
+        ],
+        'compensation_types' => [
+            'paid' => '付費',
+            'gifted' => '產品贈送',
+            'affiliate' => '佣金／聯盟',
+            'mixed' => '混合',
+            'negotiable' => '面議',
+        ],
+        'usage_rights' => [
+            'creator_only' => '只限創作者頻道',
+            'brand_repost' => '品牌自然轉載',
+            'paid_media' => '廣告投放',
+            'to_discuss' => '稍後商議',
+        ],
+    ],
+
+    'profile_options' => [
+        'niches' => [
+            ...$contentCategories,
+            '攝影攝像' => '攝影攝像',
+            '短影音創作' => '短影音創作',
+            '汽車' => '汽車',
+        ],
+        'regions' => [
+            ...$projectRegions,
+            '中國內地' => '中國內地',
+            '日本' => '日本',
+            '韓國' => '韓國',
+            '澳洲' => '澳洲',
+            '英國' => '英國',
+            '美國／加拿大' => '美國／加拿大',
+        ],
+        'languages' => [
+            '粵語' => '粵語',
+            '普通話' => '普通話',
+            '繁體中文' => '繁體中文',
+            '簡體中文' => '簡體中文',
+            '英語' => '英語',
+            '日語' => '日語',
+            '韓語' => '韓語',
+        ],
+        'age_ranges' => [
+            '18-24' => '18–24',
+            '25-34' => '25–34',
+            '35-44' => '35–44',
+            '45-54' => '45–54',
+            '55+' => '55 或以上',
+        ],
+        'rate_ranges' => [
+            'negotiable' => ['label' => '面議', 'min' => null, 'max' => null],
+            'under_1500' => ['label' => 'HK$1,500 以下', 'min' => null, 'max' => 1500],
+            '1500_3000' => ['label' => 'HK$1,500–3,000', 'min' => 1500, 'max' => 3000],
+            '3000_5000' => ['label' => 'HK$3,000–5,000', 'min' => 3000, 'max' => 5000],
+            '5000_10000' => ['label' => 'HK$5,000–10,000', 'min' => 5000, 'max' => 10000],
+            '10000_20000' => ['label' => 'HK$10,000–20,000', 'min' => 10000, 'max' => 20000],
+            '20000_plus' => ['label' => 'HK$20,000 或以上', 'min' => 20000, 'max' => null],
+        ],
+        'legacy_aliases' => [
+            'niches' => [
+                '美妝' => '美妝護膚',
+                '護膚' => '美妝護膚',
+                '時尚' => '時尚穿搭',
+                '穿搭' => '時尚穿搭',
+                '美食' => '餐飲美食',
+                '旅遊' => '旅遊生活',
+                '生活' => '旅遊生活',
+                '生活方式' => '旅遊生活',
+                '戶外' => '旅遊生活',
+                '健身' => '健身健康',
+                '運動' => '健身健康',
+                '親子' => '親子家庭',
+                '科技' => '科技數碼',
+                'IT科技' => '科技數碼',
+                '企業AI' => '科技數碼',
+                '技術應用' => '科技數碼',
+                '家居' => '家居生活',
+                '財經' => '財經商業',
+                '攝影' => '攝影攝像',
+                '短影音' => '短影音創作',
+            ],
+            'regions' => [],
+            'languages' => [
+                '繁中' => '繁體中文',
+                '簡中' => '簡體中文',
+                '英文' => '英語',
+                '國語' => '普通話',
+            ],
+        ],
+    ],
 ];
