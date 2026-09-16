@@ -212,10 +212,12 @@
                 </details>
             @elseif ($step === 'card')
                 <div class="builder-section-heading">
-                    <div><span>步驟 2 / 5</span><h3>卡片網址與介紹</h3></div>
-                    <p>設定一個容易分享嘅網址，同一句最能代表你嘅介紹。</p>
+                    <div><span>步驟 2 / 5</span><h3>設計你嘅卡片</h3></div>
+                    <p>揀模板、背景同色彩；右邊會即時顯示實際卡片效果。</p>
                 </div>
-                <form method="POST" action="{{ route('kol-card.update') }}">
+                <div class="card-design-workspace">
+                <div class="card-design-controls">
+                <form method="POST" action="{{ route('kol-card.update') }}" enctype="multipart/form-data" data-card-design-form data-card-fallback="{{ $profile?->bio }}">
                     @csrf
                     @method('PUT')
                     <label for="slug">公開短網址</label>
@@ -236,16 +238,62 @@
                     <input id="card_headline" name="card_headline" maxlength="160" value="{{ old('card_headline', $profile?->card_headline) }}" placeholder="香港美妝與生活創作者">
                     <label for="external_contact_url">合作聯絡連結</label>
                     <input id="external_contact_url" name="external_contact_url" type="url" value="{{ old('external_contact_url', $profile?->external_contact_url) }}" placeholder="https://wa.me/...">
+                    <fieldset class="card-design-fieldset">
+                        <legend>卡片模板</legend>
+                        <p class="field-help">可隨時更改樣式，唔會影響已鎖定嘅公開網址。</p>
+                        <div class="card-template-options">
+                            @foreach (config('kold.card_themes') as $value => $option)
+                                <label class="card-template-choice">
+                                    <input type="radio" name="card_theme" value="{{ $value }}" @checked(old('card_theme', $profile?->card_theme ?? 'classic') === $value)>
+                                    <span class="card-template-swatch is-{{ $value }}" aria-hidden="true"><span></span><span></span><span></span></span>
+                                    <strong>{{ $option['label'] }}</strong>
+                                    <small>{{ $option['description'] }}</small>
+                                </label>
+                            @endforeach
+                        </div>
+                        @error('card_theme')<p class="field-error">{{ $message }}</p>@enderror
+                    </fieldset>
+                    <fieldset class="card-design-fieldset">
+                        <legend>重點顏色</legend>
+                        <div class="card-accent-options">
+                            @foreach (config('kold.card_accents') as $value => $option)
+                                <label class="card-accent-choice">
+                                    <input type="radio" name="card_accent" value="{{ $value }}" @checked(old('card_accent', $profile?->card_accent ?? 'moss') === $value)>
+                                    <span class="card-accent-dot is-{{ $value }}" aria-hidden="true"></span>
+                                    {{ $option['label'] }}
+                                </label>
+                            @endforeach
+                        </div>
+                        @error('card_accent')<p class="field-error">{{ $message }}</p>@enderror
+                    </fieldset>
+                    <div class="card-background-editor">
+                        <div><strong>背景圖片</strong><p>上載直向相片，卡片會自動加深遮罩，令文字保持清晰。</p></div>
+                        <label for="card_background">選擇 JPG、PNG 或 WebP（最多 6MB）</label>
+                        <input id="card_background" type="file" name="background" accept="image/jpeg,image/png,image/webp">
+                        @error('background')<p class="field-error">{{ $message }}</p>@enderror
+                    </div>
                     <div class="builder-actions">
                         <a class="btn btn-ghost" href="{{ route('profile.edit', ['step' => 'profile']) }}">上一步</a>
                         <button class="btn btn-primary" type="submit">儲存並繼續</button>
                     </div>
                 </form>
+                @if ($profile?->card_background_path)
+                    <form method="POST" action="{{ route('kol-card.background.destroy') }}" class="card-background-remove">
+                        @csrf
+                        @method('DELETE')
+                        <button class="btn btn-ghost" type="submit">移除背景</button>
+                    </form>
+                @endif
+                </div>
+                @include('profile.partials.card-preview', ['previewHint' => '改動會即時顯示；按「儲存並繼續」先會正式保存。'])
+                </div>
             @elseif ($step === 'links')
                 <div class="builder-section-heading">
                     <div><span>步驟 3 / 5</span><h3>卡片連結</h3></div>
-                    <p>加入 Instagram、YouTube、作品集或其他希望品牌睇到嘅頁面。</p>
+                    <p>加入 Instagram、YouTube、作品集或其他頁面，為每個連結揀一個 icon。</p>
                 </div>
+                <div class="card-design-workspace">
+                <div class="card-design-controls">
                 <form method="POST" action="{{ route('kol-card.links.social') }}" class="inline-action">
                     @csrf
                     <button class="btn btn-soft" type="submit">由社群帳號加入</button>
@@ -257,6 +305,12 @@
                         <div><label for="link_title">顯示文字</label><input id="link_title" name="title" placeholder="Instagram / YouTube / Media Kit" required></div>
                         <div><label for="link_url">網址</label><input id="link_url" name="url" type="url" placeholder="https://..." required></div>
                     </div>
+                    <label for="link_icon">連結 icon</label>
+                    <select id="link_icon" name="icon">
+                        @foreach (config('kold.card_link_icons') as $value => $option)
+                            <option value="{{ $value }}">{{ $option['label'] }}</option>
+                        @endforeach
+                    </select>
                     <input type="hidden" name="type" value="custom">
                     <button class="btn btn-primary" type="submit">新增連結</button>
                 </form>
@@ -271,6 +325,12 @@
                                     <div><label>網址</label><input name="url" type="url" value="{{ $link->url }}" required></div>
                                     <div><label>次序</label><input type="number" name="sort_order" min="0" max="999" value="{{ $link->sort_order }}" required></div>
                                 </div>
+                                <label>連結 icon</label>
+                                <select name="icon">
+                                    @foreach (config('kold.card_link_icons') as $value => $option)
+                                        <option value="{{ $value }}" @selected(($link->icon ?? 'link') === $value)>{{ $option['label'] }}</option>
+                                    @endforeach
+                                </select>
                                 <div class="link-editor-actions">
                                     <label class="toggle-label"><input type="checkbox" name="is_active" value="1" @checked($link->is_active)> 顯示</label>
                                     <button class="btn btn-soft" type="submit">更新</button>
@@ -289,6 +349,9 @@
                 <div class="builder-actions">
                     <a class="btn btn-ghost" href="{{ route('profile.edit', ['step' => 'card']) }}">上一步</a>
                     <a class="btn btn-primary" href="{{ route('profile.edit', ['step' => 'tags']) }}">下一步</a>
+                </div>
+                </div>
+                @include('profile.partials.card-preview', ['previewHint' => '新增或更新連結後，右邊嘅卡片預覽會同步更新。'])
                 </div>
             @elseif ($step === 'tags')
                 @php($categoryNames = ['content' => '內容類別', 'collaboration' => '合作形式', 'brand_fit' => '品牌適配', 'audience' => '受眾', 'region' => '地區', 'tone' => '內容風格', 'platform' => '平台強項'])
@@ -403,6 +466,62 @@
 
         toggle.addEventListener('change', sync);
         sync();
+    });
+})();
+
+(() => {
+    const form = document.querySelector('[data-card-design-form]');
+    const frame = document.querySelector('[data-card-preview-frame]');
+    if (!form || !frame) return;
+
+    let backgroundUrl = null;
+    const sync = () => {
+        frame.contentWindow?.postMessage({
+            type: 'kold-card-preview',
+            theme: form.querySelector('input[name="card_theme"]:checked')?.value || 'classic',
+            accent: form.querySelector('input[name="card_accent"]:checked')?.value || 'moss',
+            headline: form.querySelector('[name="card_headline"]')?.value.trim() || form.dataset.cardFallback || '',
+            backgroundUrl,
+        }, window.location.origin);
+    };
+
+    form.addEventListener('input', sync);
+    form.addEventListener('change', sync);
+    frame.addEventListener('load', sync);
+
+    const fileInput = form.querySelector('input[name="background"]');
+    fileInput?.addEventListener('change', () => {
+        const file = fileInput.files?.[0];
+        if (!file || !file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.addEventListener('load', () => {
+            backgroundUrl = typeof reader.result === 'string' ? reader.result : null;
+            sync();
+        });
+        reader.readAsDataURL(file);
+    });
+})();
+
+(() => {
+    const url = document.querySelector('#link_url');
+    const icon = document.querySelector('#link_icon');
+    if (!url || !icon) return;
+
+    url.addEventListener('change', () => {
+        if (icon.value !== 'link') return;
+        let host;
+        try { host = new URL(url.value).hostname.toLowerCase(); } catch { return; }
+        const known = {
+            'instagram.com': 'instagram', 'youtube.com': 'youtube', 'youtu.be': 'youtube',
+            'tiktok.com': 'tiktok', 'facebook.com': 'facebook', 'fb.com': 'facebook',
+            'wa.me': 'whatsapp', 'whatsapp.com': 'whatsapp',
+        };
+        for (const [domain, value] of Object.entries(known)) {
+            if (host === domain || host.endsWith('.' + domain)) {
+                icon.value = value;
+                return;
+            }
+        }
     });
 })();
 </script>

@@ -30,6 +30,30 @@ return [
     'operator_name' => env('KOLD_OPERATOR_NAME', 'Tedku Solution'),
     'support_email' => env('KOLD_SUPPORT_EMAIL', env('MAIL_FROM_ADDRESS', 'hello@kold.tedku.cloud')),
 
+    'card_themes' => [
+        'classic' => ['label' => '經典', 'description' => '清爽留白，適合專業介紹。'],
+        'spotlight' => ['label' => '聚焦', 'description' => '相片做主角，連結更搶眼。'],
+        'studio' => ['label' => '工作室', 'description' => '深色背景，作品感更強。'],
+    ],
+    'card_accents' => [
+        'moss' => ['label' => '松綠'],
+        'coral' => ['label' => '珊瑚'],
+        'berry' => ['label' => '莓紅'],
+        'ink' => ['label' => '墨黑'],
+    ],
+    'card_link_icons' => [
+        'link' => ['label' => '連結', 'class' => 'link-45deg'],
+        'instagram' => ['label' => 'Instagram', 'class' => 'instagram'],
+        'youtube' => ['label' => 'YouTube', 'class' => 'youtube'],
+        'tiktok' => ['label' => 'TikTok', 'class' => 'tiktok'],
+        'facebook' => ['label' => 'Facebook', 'class' => 'facebook'],
+        'whatsapp' => ['label' => 'WhatsApp', 'class' => 'whatsapp'],
+        'website' => ['label' => '網站', 'class' => 'globe2'],
+        'shop' => ['label' => '商店', 'class' => 'bag'],
+        'portfolio' => ['label' => '作品集', 'class' => 'collection-play'],
+        'email' => ['label' => '電郵', 'class' => 'envelope'],
+    ],
+
     'reserved_slugs' => [
         'about',
         'admin',

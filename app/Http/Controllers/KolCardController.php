@@ -8,7 +8,10 @@ use App\Models\KolProfileSlugAlias;
 use App\Services\KolSlugService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class KolCardController extends Controller
@@ -53,7 +56,11 @@ class KolCardController extends Controller
             'cardLinks' => fn ($query) => $query->where('is_active', true),
         ]);
 
-        return view('kol-card.show', ['profile' => $profile, 'isPreview' => true]);
+        return view('kol-card.show', [
+            'profile' => $profile,
+            'isPreview' => true,
+            'isEmbedded' => $request->boolean('embedded'),
+        ]);
     }
 
     public function update(Request $request, KolSlugService $slugs): RedirectResponse
@@ -78,17 +85,62 @@ class KolCardController extends Controller
             'slug' => $slugs->validationRules($profile),
             'card_headline' => ['nullable', 'string', 'max:160'],
             'external_contact_url' => ['nullable', 'url', 'max:500'],
+            'card_theme' => ['nullable', Rule::in(array_keys(config('kold.card_themes')))],
+            'card_accent' => ['nullable', Rule::in(array_keys(config('kold.card_accents')))],
+            'background' => $this->backgroundRules(),
         ]);
 
         $profile->update([
             'slug' => $data['slug'],
             'card_headline' => $data['card_headline'] ?? null,
             'external_contact_url' => $data['external_contact_url'] ?? null,
-            'card_theme' => 'classic',
+            'card_theme' => $data['card_theme'] ?? $profile->card_theme ?? 'classic',
+            'card_accent' => $data['card_accent'] ?? $profile->card_accent ?? 'moss',
         ]);
+
+        if (isset($data['background'])) {
+            $this->replaceBackground($profile, $data['background']);
+        }
 
         return redirect()->route('profile.edit', ['step' => 'links'])
             ->with('status', '卡片網址及介紹已儲存。');
+    }
+
+    public function destroyBackground(Request $request): RedirectResponse
+    {
+        $profile = $this->currentKolProfile($request);
+        $path = $profile->card_background_path;
+        $profile->update(['card_background_path' => null]);
+
+        if ($path && str_starts_with($path, "card-backgrounds/{$profile->id}/")) {
+            Storage::disk('public')->delete($path);
+        }
+
+        return redirect()->route('profile.edit', ['step' => 'card'])
+            ->with('status', '已移除卡片背景。');
+    }
+
+    /** @return array<int, string> */
+    private function backgroundRules(): array
+    {
+        return [
+            'nullable',
+            'image',
+            'mimes:jpg,jpeg,png,webp',
+            'max:6144',
+            'dimensions:min_width=600,min_height=600,max_width=6000,max_height=6000',
+        ];
+    }
+
+    private function replaceBackground(KolProfile $profile, UploadedFile $image): void
+    {
+        $oldPath = $profile->card_background_path;
+        $path = $image->store("card-backgrounds/{$profile->id}", 'public');
+        $profile->update(['card_background_path' => $path]);
+
+        if ($oldPath && str_starts_with($oldPath, "card-backgrounds/{$profile->id}/")) {
+            Storage::disk('public')->delete($oldPath);
+        }
     }
 
     public function storeLink(Request $request): RedirectResponse
@@ -99,6 +151,7 @@ class KolCardController extends Controller
             'title' => ['required', 'string', 'max:80'],
             'url' => ['required', 'url', 'max:500'],
             'type' => ['nullable', 'string', 'max:40'],
+            'icon' => ['nullable', Rule::in(array_keys(config('kold.card_link_icons')))],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:999'],
             'is_active' => ['nullable', 'boolean'],
         ]);
@@ -107,6 +160,7 @@ class KolCardController extends Controller
             'title' => $data['title'],
             'url' => $data['url'],
             'type' => $data['type'] ?? 'custom',
+            'icon' => $data['icon'] ?? 'link',
             'sort_order' => $data['sort_order'] ?? ($profile->cardLinks()->max('sort_order') + 10),
             'is_active' => (bool) ($data['is_active'] ?? true),
         ]);
@@ -133,6 +187,9 @@ class KolCardController extends Controller
                 'title' => ucfirst((string) $account->platform),
                 'url' => $url,
                 'type' => (string) $account->platform,
+                'icon' => array_key_exists((string) $account->platform, config('kold.card_link_icons'))
+                    ? (string) $account->platform
+                    : 'link',
                 'sort_order' => $sortOrder,
                 'is_active' => true,
             ]);
@@ -150,6 +207,7 @@ class KolCardController extends Controller
             'title' => ['required', 'string', 'max:80'],
             'url' => ['required', 'url', 'max:500'],
             'sort_order' => ['required', 'integer', 'min:0', 'max:999'],
+            'icon' => ['nullable', Rule::in(array_keys(config('kold.card_link_icons')))],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
@@ -157,6 +215,7 @@ class KolCardController extends Controller
             'title' => $data['title'],
             'url' => $data['url'],
             'sort_order' => $data['sort_order'],
+            'icon' => $data['icon'] ?? $kolCardLink->icon ?? 'link',
             'is_active' => (bool) ($data['is_active'] ?? false),
         ]);
 
