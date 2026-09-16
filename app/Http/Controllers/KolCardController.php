@@ -14,6 +14,8 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use RuntimeException;
+use Throwable;
 
 class KolCardController extends Controller
 {
@@ -91,16 +93,38 @@ class KolCardController extends Controller
             'background' => $this->backgroundRules(),
         ]);
 
-        $profile->update([
+        $oldBackgroundPath = $profile->card_background_path;
+        $newBackgroundPath = isset($data['background'])
+            ? $this->storeBackground($profile, $data['background'])
+            : null;
+
+        $updates = [
             'slug' => $data['slug'],
             'card_headline' => $data['card_headline'] ?? null,
             'external_contact_url' => $data['external_contact_url'] ?? null,
             'card_theme' => $data['card_theme'] ?? $profile->card_theme ?? 'classic',
             'card_accent' => $data['card_accent'] ?? $profile->card_accent ?? 'moss',
-        ]);
+        ];
 
-        if (isset($data['background'])) {
-            $this->replaceBackground($profile, $data['background']);
+        if ($newBackgroundPath !== null) {
+            $updates['card_background_path'] = $newBackgroundPath;
+        }
+
+        try {
+            if (! $profile->update($updates)) {
+                throw new RuntimeException('Card settings could not be saved.');
+            }
+        } catch (Throwable $error) {
+            if ($newBackgroundPath !== null) {
+                Storage::disk('public')->delete($newBackgroundPath);
+            }
+
+            throw $error;
+        }
+
+        if ($newBackgroundPath !== null && $oldBackgroundPath && $oldBackgroundPath !== $newBackgroundPath
+            && str_starts_with($oldBackgroundPath, "card-backgrounds/{$profile->id}/")) {
+            Storage::disk('public')->delete($oldBackgroundPath);
         }
 
         return redirect()->route('profile.edit', ['step' => 'links'])
@@ -133,9 +157,8 @@ class KolCardController extends Controller
         ];
     }
 
-    private function replaceBackground(KolProfile $profile, UploadedFile $image): void
+    private function storeBackground(KolProfile $profile, UploadedFile $image): string
     {
-        $oldPath = $profile->card_background_path;
         $path = $image->store("card-backgrounds/{$profile->id}", 'public');
 
         if (! is_string($path) || $path === '') {
@@ -144,11 +167,7 @@ class KolCardController extends Controller
             ]);
         }
 
-        $profile->update(['card_background_path' => $path]);
-
-        if ($oldPath && str_starts_with($oldPath, "card-backgrounds/{$profile->id}/")) {
-            Storage::disk('public')->delete($oldPath);
-        }
+        return $path;
     }
 
     public function storeLink(Request $request): RedirectResponse

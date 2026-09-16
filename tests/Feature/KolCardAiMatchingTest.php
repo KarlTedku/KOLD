@@ -255,12 +255,18 @@ class KolCardAiMatchingTest extends TestCase
             ->from(route('profile.edit', ['step' => 'card']))
             ->put(route('kol-card.update'), [
                 'slug' => 'cover-creator',
+                'card_headline' => 'This must not be saved',
+                'card_theme' => 'studio',
+                'card_accent' => 'berry',
                 'background' => UploadedFile::fake()->image('failed-cover.jpg', 1200, 1800),
             ])
             ->assertSessionHasErrors('background');
 
         Storage::set('public', $workingDisk);
         $this->assertSame($firstPath, $profile->fresh()->card_background_path);
+        $this->assertNull($profile->fresh()->card_headline);
+        $this->assertSame('spotlight', $profile->fresh()->card_theme);
+        $this->assertSame('coral', $profile->fresh()->card_accent);
         Storage::disk('public')->assertExists($firstPath);
 
         $this->get(route('kol-card.show', 'cover-creator'))
