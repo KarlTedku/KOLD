@@ -52,6 +52,56 @@ final result: passed
 
 ---
 
+# KOLD Standalone Public Card — Design QA
+
+- Source visual truth: `/var/folders/70/ms4qtszs4c189stbf5_sdlpw0000gn/T/codex-clipboard-41672b03-1cdc-4245-9efd-89b14b235964.png`
+- Rendered implementation: `http://127.0.0.1:8765/k/anthony-lo-test` in the Codex in-app browser.
+- Desktop implementation screenshot: browser-rendered capture emitted in the same comparison view as the source during this QA run; the in-app browser surface did not expose a local screenshot export path.
+- Mobile implementation screenshot: browser-rendered 390 × 844 capture from this QA run; the in-app browser surface did not expose a local screenshot export path.
+- Desktop viewport: 1464 × 1418 CSS px at device pixel ratio 1.
+- Mobile viewport: 390 × 844 CSS px at device pixel ratio 1.
+- Source pixels: 1832 × 1521. The source includes browser chrome and a sidebar; its page-content region is approximately 1464 × 1418, which was used for the desktop comparison viewport.
+- State: anonymous public share view with an isolated Anthony Lo QA fixture matching the source card's content density. The avatar uses the existing local KOLD app asset so image loading can be verified without relying on a third-party image host.
+
+## Full-view comparison evidence
+
+The source image and the browser-rendered desktop implementation were emitted together in one comparison input. The shared card preserves the source's centered single-card composition, restrained KOLD serif/body type pairing, pale green-to-sand background, rounded link and action controls, profile hierarchy, and compact footer attribution. The global website header, navigation, site footer, public collaboration price, duplicated profile copy, and owner-only primary edit action were intentionally removed from the anonymous shared state. With those non-card elements removed, the profile card is vertically centered and reads as a self-contained public identity rather than a page inside the KOLD application.
+
+The 390 × 844 mobile capture keeps the complete card above the fold, with a 362.8 px card width, 13.6 px side margins, and no horizontal overflow.
+
+## Focused region evidence
+
+- Card frame: desktop card measured 460 × 526.9 CSS px with a 24 px radius; mobile card measured 362.8 × 492.7 CSS px with a 20 px radius.
+- Identity block: the avatar rendered at 112 × 112 desktop and 96 × 96 mobile with a complete 1024 px source image; name, headline, tags, language, and link remain centered and readable.
+- Actions: Instagram, the public collaboration invitation CTA, and Powered by KOLD all expose valid links. External card links retain `target="_blank"` plus `rel="noopener noreferrer"`.
+- Isolation: browser inspection found zero `header` elements, zero `footer` elements, no site navigation copy, and no visible `參考合作價` or `HK$` text.
+
+## Required fidelity surfaces
+
+- Fonts and typography: Fraunces remains the display face and the existing Manrope/PingFang/Noto Sans fallback stack remains the body system. The heading is the only H1, the profile article is labelled by it, and headline wrapping stays balanced at both checked viewports. The local browser used the configured fallback where the remote Manrope file was unavailable; hierarchy and metrics remained stable.
+- Spacing and layout rhythm: the content is grouped into one 460 px card with a compact identity-to-link rhythm, consistent pill targets, a 48 px primary action, and proportional 24/20 px desktop/mobile radii.
+- Colors and visual tokens: the existing ink, forest, moss, coral, paper, and line tokens are retained. The softer standalone gradient, translucent white surface, and stronger elevation separate the share card from the application shell without adding a new visual language.
+- Image quality and asset fidelity: production continues to use each creator's real avatar and portfolio images. The isolated QA fixture used an existing 1024 px local KOLD asset to verify crop, circular masking, sharpness, and responsive sizing; no placeholder shape, custom SVG, or CSS illustration was introduced.
+- Copy and content: public identity copy remains Traditional Chinese/Cantonese. Internal rate information and global application navigation are absent, while the useful social link, collaboration entry point, and KOLD attribution remain.
+
+## Findings and comparison history
+
+No actionable P0, P1, or P2 differences remained in the first normalized Anthony Lo comparison. A preliminary Mina fixture rendered four portfolio images and therefore represented a different content state from the supplied source; the QA state was normalized to the matching no-portfolio content density before comparison, so that difference was not filed as a design defect.
+
+The avatar artwork differs from the source because it is dynamic creator content and the isolated local fixture deliberately uses a network-independent existing asset. This is an expected data difference, not design drift.
+
+## Interaction and accessibility checks
+
+- Verified the social link, public invitation CTA, and Powered by KOLD destinations without triggering third-party navigation.
+- Automated coverage verifies the standalone layout, hidden public rate, absent global header/footer, and discreet owner edit link.
+- Keyboard focus styling remains visible for every card link, the article has a programmatic H1 label, and all visible actions meet or exceed a 40 px target (primary actions are 48 px).
+- Browser checks reported no console warnings or errors, no horizontal overflow at 390 px, complete local image loading, and stable desktop/mobile card dimensions.
+- Full test suite: 53 passed, 269 assertions. Formatting, production frontend build, and diff checks passed.
+
+final result: passed
+
+---
+
 # KOLD Project Marketplace — Design QA
 
 - Source visual truth: `/var/folders/70/ms4qtszs4c189stbf5_sdlpw0000gn/T/codex-clipboard-c4d49285-fce3-4dcd-98d8-00071d428922.png`
