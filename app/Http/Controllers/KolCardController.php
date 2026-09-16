@@ -12,6 +12,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class KolCardController extends Controller
@@ -136,6 +137,13 @@ class KolCardController extends Controller
     {
         $oldPath = $profile->card_background_path;
         $path = $image->store("card-backgrounds/{$profile->id}", 'public');
+
+        if (! is_string($path) || $path === '') {
+            throw ValidationException::withMessages([
+                'background' => '背景圖片上載失敗，原有圖片已保留。請稍後再試。',
+            ]);
+        }
+
         $profile->update(['card_background_path' => $path]);
 
         if ($oldPath && str_starts_with($oldPath, "card-backgrounds/{$profile->id}/")) {

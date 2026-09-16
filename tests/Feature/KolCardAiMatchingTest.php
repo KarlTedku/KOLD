@@ -13,6 +13,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Mockery;
 use Tests\TestCase;
 
 class KolCardAiMatchingTest extends TestCase
@@ -203,6 +204,22 @@ class KolCardAiMatchingTest extends TestCase
             ->assertSee('Food, travel and creative life');
     }
 
+    public function test_new_kol_can_preview_card_before_setting_a_slug(): void
+    {
+        $kol = User::factory()->create(['role' => 'kol']);
+
+        $this->actingAs($kol)
+            ->get(route('profile.edit', ['step' => 'card']))
+            ->assertOk()
+            ->assertSee('data-card-preview-frame', false);
+
+        $this->get(route('kol-card.preview', ['embedded' => 1]))
+            ->assertOk()
+            ->assertSee('noindex,nofollow')
+            ->assertDontSee('rel="canonical"', false)
+            ->assertDontSee('property="og:url"', false);
+    }
+
     public function test_kol_can_upload_replace_and_remove_a_card_background(): void
     {
         Storage::fake('public');
@@ -228,6 +245,24 @@ class KolCardAiMatchingTest extends TestCase
         $this->assertSame('spotlight', $profile->fresh()->card_theme);
         $this->assertSame('coral', $profile->fresh()->card_accent);
         Storage::disk('public')->assertExists($firstPath);
+
+        $workingDisk = Storage::disk('public');
+        $failedDisk = Mockery::mock($workingDisk)->makePartial();
+        $failedDisk->shouldReceive('putFileAs')->once()->andReturn(false);
+        Storage::set('public', $failedDisk);
+
+        $this->actingAs($kol)
+            ->from(route('profile.edit', ['step' => 'card']))
+            ->put(route('kol-card.update'), [
+                'slug' => 'cover-creator',
+                'background' => UploadedFile::fake()->image('failed-cover.jpg', 1200, 1800),
+            ])
+            ->assertSessionHasErrors('background');
+
+        Storage::set('public', $workingDisk);
+        $this->assertSame($firstPath, $profile->fresh()->card_background_path);
+        Storage::disk('public')->assertExists($firstPath);
+
         $this->get(route('kol-card.show', 'cover-creator'))
             ->assertOk()
             ->assertSee('kol-card-cover', false)
