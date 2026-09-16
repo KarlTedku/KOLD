@@ -2,7 +2,9 @@
 
 [English version](PRODUCT_ROADMAP.md)
 
-最後更新：2026-09-12
+[工程及交付路線圖](ENGINEERING_ROADMAP.md)
+
+最後更新：2026-09-16
 
 ## 產品核心目標
 
@@ -21,7 +23,7 @@ KOLD 協助 KOL 建立可重複使用及公開分享的個人身份頁，同時�
 ```mermaid
 flowchart LR
     A[基礎功能<br/>已完成] --> B[受控 Beta 測試<br/>目前階段]
-    B --> C[Marketplace 媒合循環<br/>下一步]
+    B --> C[Marketplace 媒合循環<br/>已完成／驗證中]
     C --> D[公開 Beta<br/>下一步]
     D --> E[商業化平台<br/>稍後處理]
 
@@ -67,14 +69,14 @@ flowchart TD
     KA --> PUB[發佈公開 KOL Card]
     PUB --> KACT{尋找合作}
     KACT -->|品牌主動邀請| INV[收到品牌合作邀請]
-    KACT -->|KOL 主動申請，下一步| PL[瀏覽合作項目及申請]
+    KACT -->|KOL 主動申請| PL[瀏覽合作項目及申請]
 
     R -->|品牌| BP[完成品牌 Profile]
     BP --> BM[輸入 Campaign Brief]
     BM --> REC[查看附有配對原因的 KOL 推薦]
     REC --> VIEW[查看 KOL Profile 及 KOL Card]
     VIEW -->|直接邀請| INVITE[發出合作邀請]
-    BP -->|Marketplace 路線，下一步| POST[發佈合作項目]
+    BP -->|Marketplace 路線| POST[發佈合作項目]
     POST --> APPS[審核 KOL 申請]
 
     INV --> CHAT[接受合作機會後建立對話]
@@ -113,7 +115,7 @@ flowchart LR
 | 0. 基礎功能 | 可運作的雙邊平台原型 | SSO、角色、Profile、探索、邀請、對話 | 核心測試通過，正式站運作穩定 | 已完成 |
 | 1. KOL 身份頁 | 為 KOL 提供值得註冊及分享的功能 | KOL Card、slug、連結、草稿預覽、發佈、AI 標籤確認 | 公開 Card 毋須等待 Meta 審批亦可運作 | 已完成 |
 | 2. 受控 Beta | 讓真實用戶驗證產品價值 | 專業公開 KOL 頁、修正 Meta 登入、Page/IG 測試、準備 App Review、收集意見 | 5 至 20 位受邀 KOL 發佈及分享具可信度的 Profile | 目前階段 |
-| 3. Marketplace MVP | KOL 可以主動尋找工作 | 發佈項目、瀏覽、申請、審核、接受後建立對話 | 完成一次由品牌至 KOL 的完整合作項目流程 | 下一步 |
+| 3. Marketplace MVP | KOL 可以主動尋找工作 | 發佈項目、篩選瀏覽、申請、審核、接受後建立對話 | 以真實品牌及 KOL 完成一次端對端合作項目流程 | 已完成／驗證中 |
 | 4. 公開 Beta | 安全地開放自行註冊 | PostgreSQL、內容審核、舉報、通知、系統監察 | 外部用戶毋須人手協助亦可加入 | 下一步 |
 | 5. 商業化 | 建立由品牌端支持的可持續產品 | 品牌方案、用量限制、分析、合作追蹤 | 驗證定價及付款模式 | 稍後處理 |
 
@@ -151,8 +153,8 @@ flowchart LR
 | --- | --- | --- |
 | 私隱政策、使用條款、資料刪除 | 已完成 | 商業推出前進行合資格法律審閱 |
 | 停用正式站 Demo Login | 已完成 | 無 |
-| 自動測試及部署備份 | 已完成 | 加入定期還原演練 |
-| Source Control Release | 下一步 | Commit 及 push 目前已部署的程式碼 |
+| PR CI 及部署備份 | 已完成 | CI 包括 SQLite、PostgreSQL、格式、build 及安全檢查；CD rollback 見工程路線圖 |
+| Source Control Release | 進行中 | Sprint 0 將目前已部署功能整理成可追溯 release |
 | 資料庫 | 測試中 | SQLite 適合受控 Beta；公開自行註冊前遷移至 PostgreSQL |
 | 管理員審核及濫用舉報 | 下一步 | 公開 Beta 前必須完成 |
 | 系統監察及警報 | 下一步 | 加入錯誤及可用性監察 |
@@ -187,7 +189,7 @@ flowchart LR
 
 現有需要登入的 `/u/{user}` 頁面會保留為 Marketplace 互動頁。公開訪客使用 `/k/{slug}`；發出邀請或進入對話前必須登入。
 
-### P1：Project Marketplace MVP
+### P1：Project Marketplace MVP（已完成，進入真實流程驗證）
 
 1. 品牌合作項目草稿、編輯、公開及截止。
 2. 已登入 KOL 的合作項目列表及詳情。
@@ -195,6 +197,8 @@ flowchart LR
 4. 品牌申請收件匣，可接受或拒絕申請。
 5. 接受申請後建立或重用對話。
 6. 權限、擁有權、重複申請、截止日期及狀態轉換測試。
+7. 使用真實品牌及 KOL 帳戶完成一次發佈、申請、審核、接受及對話流程。
+8. 記錄項目瀏覽至申請、申請至接受及提交失敗率。
 
 ### P2：公開 Beta 準備
 

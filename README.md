@@ -28,8 +28,14 @@ php artisan serve
 
 見 [DEPLOY.md](DEPLOY.md)。
 
-- Push 到 `main` → GitHub Actions 自動部署正式站
+- Pull Request 通過 [CI](.github/workflows/ci.yml) 並合併 `main` → GitHub Actions 自動部署正式站
 - 本機有 SSH 時亦可跑 `./scripts/deploy.sh`
+
+## 開發流程及 Roadmap
+
+- [產品路線圖（繁體中文）](docs/PRODUCT_ROADMAP_ZH_HANT.md)
+- [工程及交付路線圖](docs/ENGINEERING_ROADMAP.md)
+- [開發及 Pull Request 規則](CONTRIBUTING.md)
 
 ## 環境變數
 

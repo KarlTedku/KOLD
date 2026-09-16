@@ -42,8 +42,7 @@ Already implemented:
 Important current limits:
 
 - Production database is SQLite. This is acceptable for MVP/demo, but PostgreSQL is recommended before public SaaS onboarding.
-- Project marketplace does not exist yet.
-- KOL applications to projects do not exist yet.
+- Project marketplace, filtering, KOL applications, Brand review, and accepted-application conversations are implemented; real-user validation is still required.
 - Admin moderation does not exist yet.
 - No payment, contract, subscription, or commission flow.
 - Meta Page / IG connect is deployed; a real tester authorization smoke test is still pending.
@@ -124,10 +123,10 @@ The MVP should prove the marketplace loop without building commercial infrastruc
 | KOL card | KOL can share short public card URL with links | Done |
 | AI tagging | KOL can generate and approve broad matching tags | Done |
 | Brand AI matching | Brand can search KOLs from a campaign brief | Done |
-| Project posting | Brand can create project opportunities | Pending |
-| Project browsing | KOL can browse open projects | Pending |
-| Project application | KOL can apply to project | Pending |
-| Application review | Brand can accept/decline applications | Pending |
+| Project posting | Brand can create project opportunities | Done |
+| Project browsing | KOL can browse and filter open projects | Done |
+| Project application | KOL can apply to project | Done |
+| Application review | Brand can accept/decline applications | Done |
 | App Review docs | Meta permission explanation and reviewer flow | Started |
 
 ### Should Have
