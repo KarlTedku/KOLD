@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Requirements for this endpoint:
  * 1) App must be in Live mode and approved for the "Meta oEmbed Read" feature.
@@ -9,10 +10,10 @@
 $app_id = getenv('META_APP_ID') ?: '1310103137345062';
 // Use CLIENT TOKEN here, **not** app secret. Set META_CLIENT_TOKEN in your env.
 $client_token = getenv('META_CLIENT_TOKEN') ?: 'REPLACE_WITH_CLIENT_TOKEN';
-$token = $app_id . '|' . $client_token; // Required for Meta oEmbed Read
+$token = $app_id.'|'.$client_token; // Required for Meta oEmbed Read
 
 $post_url = 'https://www.instagram.com/p/DJTBYsJSG2P/';
-$api_url = 'https://graph.facebook.com/v19.0/instagram_oembed?omitscript=true&url=' . urlencode($post_url) . '&access_token=' . urlencode($token);
+$api_url = 'https://graph.facebook.com/v19.0/instagram_oembed?omitscript=true&url='.urlencode($post_url).'&access_token='.urlencode($token);
 
 // 使用 cURL 執行請求
 $ch = curl_init();
@@ -26,13 +27,13 @@ $response = curl_exec($ch);
 
 // 錯誤處理與回應碼顯示
 if (curl_errno($ch)) {
-    echo '❌ cURL 錯誤: ' . curl_error($ch);
+    echo '❌ cURL 錯誤: '.curl_error($ch);
 } else {
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    echo '<p>HTTP 回應碼: ' . $http_code . '</p>';
+    echo '<p>HTTP 回應碼: '.$http_code.'</p>';
     $decoded = json_decode($response, true);
     if ($decoded === null) {
-        echo '<pre>Raw response:\n' . htmlspecialchars($response) . '</pre>';
+        echo '<pre>Raw response:\n'.htmlspecialchars($response).'</pre>';
     } else {
         echo '<pre>';
         print_r($decoded);
@@ -43,4 +44,3 @@ if (curl_errno($ch)) {
     }
 }
 curl_close($ch);
-?>
