@@ -3,12 +3,16 @@
 @section('title', $profile->display_name.' — KOLD Card')
 
 @section('meta')
-    <link rel="canonical" href="{{ route('kol-card.show', $profile->slug) }}">
+    @if (! ($isPreview ?? false) && filled($profile->slug))
+        <link rel="canonical" href="{{ route('kol-card.show', $profile->slug) }}">
+    @endif
     <meta name="description" content="{{ $profile->card_headline ?: \Illuminate\Support\Str::limit($profile->bio, 150) }}">
     <meta property="og:title" content="{{ $profile->display_name }} — KOLD">
     <meta property="og:description" content="{{ $profile->card_headline ?: \Illuminate\Support\Str::limit($profile->bio, 150) }}">
     <meta property="og:type" content="profile">
-    <meta property="og:url" content="{{ route('kol-card.show', $profile->slug) }}">
+    @if (! ($isPreview ?? false) && filled($profile->slug))
+        <meta property="og:url" content="{{ route('kol-card.show', $profile->slug) }}">
+    @endif
     @if ($profile->user->avatar)<meta property="og:image" content="{{ $profile->user->avatar }}">@endif
     @if ($isPreview ?? false)<meta name="robots" content="noindex,nofollow">@endif
 @endsection
