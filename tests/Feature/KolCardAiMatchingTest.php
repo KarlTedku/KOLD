@@ -4,10 +4,13 @@ namespace Tests\Feature;
 
 use App\Models\KolAiTag;
 use App\Models\KolProfile;
+use App\Models\KolProfileSlugAlias;
+use App\Models\KolProfileSlugChange;
 use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -143,6 +146,113 @@ class KolCardAiMatchingTest extends TestCase
             'sort_order' => 5,
             'is_active' => true,
         ]);
+    }
+
+    public function test_draft_slug_can_change_but_reserved_and_historical_slugs_cannot_be_claimed(): void
+    {
+        $kol = User::factory()->create(['role' => 'kol']);
+        $profile = KolProfile::query()->create([
+            'user_id' => $kol->id,
+            'display_name' => 'Draft Owner',
+            'slug' => 'draft-owner',
+            'status' => 'draft',
+        ]);
+        KolProfileSlugAlias::query()->create([
+            'kol_profile_id' => null,
+            'slug' => 'retired-creator',
+        ]);
+
+        $this->actingAs($kol)
+            ->put(route('kol-card.update'), [
+                'slug' => 'draft-owner-new',
+                'card_headline' => 'Updated draft',
+            ])
+            ->assertRedirect(route('profile.edit', ['step' => 'links']));
+
+        $this->assertSame('draft-owner-new', $profile->fresh()->slug);
+
+        foreach (['admin', 'retired-creator'] as $blockedSlug) {
+            $this->actingAs($kol)
+                ->from(route('profile.edit', ['step' => 'card']))
+                ->put(route('kol-card.update'), ['slug' => $blockedSlug])
+                ->assertRedirect(route('profile.edit', ['step' => 'card']))
+                ->assertSessionHasErrors('slug');
+        }
+    }
+
+    public function test_locked_slug_is_read_only_for_kol_but_other_card_fields_can_still_change(): void
+    {
+        $kol = User::factory()->create(['role' => 'kol']);
+        $profile = KolProfile::query()->create([
+            'user_id' => $kol->id,
+            'display_name' => 'Locked Owner',
+            'slug' => 'locked-owner',
+            'slug_locked_at' => now(),
+            'status' => 'published',
+        ]);
+
+        $this->actingAs($kol)
+            ->put(route('kol-card.update'), [
+                'slug' => 'hijacked-owner',
+                'card_headline' => 'Should not save',
+            ])
+            ->assertSessionHasErrors('slug');
+
+        $this->assertSame('locked-owner', $profile->fresh()->slug);
+        $this->assertNull($profile->fresh()->card_headline);
+
+        $this->actingAs($kol)
+            ->put(route('kol-card.update'), [
+                'slug' => 'locked-owner',
+                'card_headline' => 'Updated safely',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('Updated safely', $profile->fresh()->card_headline);
+        $this->actingAs($kol)
+            ->get(route('profile.edit', ['step' => 'card']))
+            ->assertOk()
+            ->assertSee('公開網址已鎖定')
+            ->assertSee('readonly', false);
+    }
+
+    public function test_operator_slug_rename_keeps_a_permanent_redirect_and_audit_record(): void
+    {
+        $kol = User::factory()->create(['role' => 'kol']);
+        $profile = KolProfile::query()->create([
+            'user_id' => $kol->id,
+            'display_name' => 'Renamed Creator',
+            'slug' => 'old-creator-name',
+            'slug_locked_at' => now(),
+            'status' => 'published',
+        ]);
+
+        $exitCode = Artisan::call('kold:rename-kol-slug', [
+            'current' => 'old-creator-name',
+            'new' => 'new-creator-name',
+            '--actor' => 'Karl Admin',
+            '--reason' => 'Creator approved brand rename',
+        ]);
+
+        $this->assertSame(0, $exitCode);
+        $this->assertSame('new-creator-name', $profile->fresh()->slug);
+        $this->assertDatabaseHas('kol_profile_slug_aliases', [
+            'kol_profile_id' => $profile->id,
+            'slug' => 'old-creator-name',
+        ]);
+        $this->assertDatabaseHas('kol_profile_slug_changes', [
+            'kol_profile_id' => $profile->id,
+            'old_slug' => 'old-creator-name',
+            'new_slug' => 'new-creator-name',
+            'changed_by' => 'Karl Admin',
+            'reason' => 'Creator approved brand rename',
+        ]);
+        $this->assertSame(1, KolProfileSlugChange::query()->count());
+
+        $this->get(route('kol-card.show', 'old-creator-name'))
+            ->assertStatus(301)
+            ->assertRedirect(route('kol-card.show', 'new-creator-name'));
+        $this->get(route('kol-card.show', 'new-creator-name'))->assertOk();
     }
 
     public function test_kol_profile_uses_structured_choices(): void
@@ -369,14 +479,49 @@ class KolCardAiMatchingTest extends TestCase
             ->assertSee('私人預覽');
 
         $this->actingAs($kol)
-            ->post(route('kol-card.publish'))
+            ->post(route('kol-card.publish'), ['confirm_slug_lock' => '1'])
             ->assertRedirect(route('profile.edit', ['step' => 'preview']))
-            ->assertSessionHasNoErrors();
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('status', 'KOL 卡片已發布，公開網址亦已鎖定。');
+
+        $this->assertNotNull($profile->fresh()->slug_locked_at);
 
         $this->get(route('kol-card.show', 'publish-owner'))->assertOk();
 
         $this->actingAs($kol)->post(route('kol-card.unpublish'))->assertRedirect();
         $this->get(route('kol-card.show', 'publish-owner'))->assertNotFound();
+
+        $this->actingAs($kol)
+            ->put(route('kol-card.update'), ['slug' => 'publish-owner-renamed'])
+            ->assertSessionHasErrors('slug');
+        $this->assertSame('publish-owner', $profile->fresh()->slug);
+    }
+
+    public function test_first_publish_requires_slug_lock_confirmation(): void
+    {
+        $kol = User::factory()->create(['role' => 'kol']);
+        $profile = KolProfile::query()->create([
+            'user_id' => $kol->id,
+            'display_name' => 'Confirmation Owner',
+            'slug' => 'confirmation-owner',
+            'status' => 'draft',
+        ]);
+        $profile->cardLinks()->create([
+            'title' => 'Instagram',
+            'url' => 'https://instagram.com/confirmation-owner',
+            'sort_order' => 10,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($kol)
+            ->from(route('profile.edit', ['step' => 'preview']))
+            ->post(route('kol-card.publish'))
+            ->assertRedirect(route('profile.edit', ['step' => 'preview']))
+            ->assertSessionHasErrors('confirm_slug_lock');
+
+        $profile->refresh();
+        $this->assertSame('draft', $profile->status);
+        $this->assertNull($profile->slug_locked_at);
     }
 
     public function test_kol_can_create_card_links_from_social_accounts(): void

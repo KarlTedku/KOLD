@@ -68,6 +68,9 @@ Important current limits:
    - Facebook Page through Meta.
    - YouTube later if Google OAuth is configured.
 5. KOL publishes the profile.
+   - The public slug remains editable while the card is a draft.
+   - The slug is locked on first publication and stays locked after unpublishing.
+   - Operator-assisted renames require an actor and reason; every previous slug remains permanently reserved and redirects with HTTP 301 while the profile exists.
 6. KOL can:
    - Share public profile URL.
    - Receive brand invitations.
@@ -362,6 +365,7 @@ Current decisions:
 - KOLD supports both brand-to-KOL discovery and KOL-to-project discovery.
 - KOL public profile is a core feature, not a side feature.
 - Meta social connect is for credibility first; insights come later.
+- Public KOL slugs are stable public identifiers, not authorization keys. Authorization continues to use the immutable internal User ID.
 - PostgreSQL should happen before real SaaS launch, but not before product flow is validated.
 
 Open decisions:

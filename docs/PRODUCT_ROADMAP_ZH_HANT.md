@@ -184,7 +184,7 @@ flowchart LR
 4. 按實用類別顯示經 KOL 確認的 AI 標籤。
 5. 可選擇公開參考報價範圍及合作形式。
 6. 清晰的品牌行動按鈕，用於查看 Marketplace Profile 或發起合作邀請。
-7. Mobile-first 版面、簡潔分享網址及社交分享 metadata。
+7. Mobile-first 版面、首次發布後鎖定的穩定分享網址、由營運協助改名時保留永久轉址，以及社交分享 metadata。
 8. KOL 可控制資料公開程度，確保私人聯絡資料及未確認 AI 標籤不會公開顯示。
 
 現有需要登入的 `/u/{user}` 頁面會保留為 Marketplace 互動頁。公開訪客使用 `/k/{slug}`；發出邀請或進入對話前必須登入。

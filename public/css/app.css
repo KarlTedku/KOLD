@@ -652,6 +652,21 @@ textarea { min-height: 120px; resize: vertical; }
 }
 .slug-field span { padding-left: .9rem; color: rgba(15,28,26,.58); }
 .slug-field input { border: 0; margin: 0; padding-left: .25rem; background: transparent; }
+.slug-field.is-locked { border-color: rgba(47,107,93,.28); background: rgba(47,107,93,.06); }
+.slug-field.is-locked input { color: rgba(15,28,26,.66); cursor: not-allowed; }
+.slug-lock-note {
+  display: grid;
+  gap: .25rem;
+  margin: .55rem 0 1.15rem;
+  padding: .8rem .9rem;
+  border-left: 3px solid var(--moss);
+  background: rgba(47,107,93,.08);
+  color: rgba(15,28,26,.68);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+.slug-lock-note strong { color: var(--forest); }
+.slug-lock-note a { color: var(--moss); font-weight: 700; }
 .field-help { margin: 0 0 1rem; color: rgba(15,28,26,.6); font-size: .8rem; }
 .ai-draft-box { margin-top: 1.5rem; border-top: 1px solid var(--line); padding-top: 1rem; }
 .ai-draft-box summary { cursor: pointer; font-weight: 700; }
@@ -683,7 +698,7 @@ textarea { min-height: 120px; resize: vertical; }
 .empty-state { padding: 1.25rem 0; color: rgba(15,28,26,.62); }
 .preview-summary {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 2fr repeat(3, 1fr);
   gap: 1px;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -703,6 +718,19 @@ textarea { min-height: 120px; resize: vertical; }
 }
 .readiness-box.is-ready { border-left-color: var(--moss); background: rgba(47,107,93,.1); }
 .readiness-box ul { margin: .55rem 0 0; padding-left: 1.2rem; }
+.publish-card-form { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.slug-lock-confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: .55rem;
+  max-width: 30rem;
+  margin: 0;
+  color: rgba(15,28,26,.7);
+  font-size: .78rem;
+  line-height: 1.45;
+}
+.slug-lock-confirmation input { flex: none; width: auto; margin: .15rem 0 0; }
+.slug-lock-confirmation strong { color: var(--forest); }
 .profile-form-narrow { width: min(100%, 760px); }
 
 .match-form { margin-bottom: 1.75rem; padding: clamp(1.25rem, 3vw, 2rem); }

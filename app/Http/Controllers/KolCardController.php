@@ -4,25 +4,42 @@ namespace App\Http\Controllers;
 
 use App\Models\KolCardLink;
 use App\Models\KolProfile;
+use App\Models\KolProfileSlugAlias;
+use App\Services\KolSlugService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class KolCardController extends Controller
 {
-    public function show(string $slug): View
+    public function show(string $slug): View|RedirectResponse
     {
+        $relations = [
+            'user.socialAccounts',
+            'approvedAiTags',
+            'cardLinks' => fn ($query) => $query->where('is_active', true),
+        ];
+
         $profile = KolProfile::query()
-            ->with([
-                'user.socialAccounts',
-                'approvedAiTags',
-                'cardLinks' => fn ($query) => $query->where('is_active', true),
-            ])
+            ->with($relations)
             ->where('slug', $slug)
             ->where('status', 'published')
-            ->firstOrFail();
+            ->first();
+
+        if (! $profile) {
+            $alias = KolProfileSlugAlias::query()
+                ->with(['kolProfile' => fn ($query) => $query->with($relations)])
+                ->where('slug', $slug)
+                ->first();
+            $profile = $alias?->kolProfile;
+
+            if (! $profile || ! $profile->isPublished() || blank($profile->slug)) {
+                abort(404);
+            }
+
+            return redirect()->route('kol-card.show', $profile->slug, 301);
+        }
 
         return view('kol-card.show', ['profile' => $profile, 'isPreview' => false]);
     }
@@ -39,7 +56,7 @@ class KolCardController extends Controller
         return view('kol-card.show', ['profile' => $profile, 'isPreview' => true]);
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request, KolSlugService $slugs): RedirectResponse
     {
         abort_unless($request->user()->isKol(), 403);
 
@@ -48,21 +65,23 @@ class KolCardController extends Controller
             ['display_name' => $request->user()->name, 'status' => 'draft']
         );
 
+        $requestedSlug = $slugs->normalize((string) $request->input('slug'));
+        $request->merge(['slug' => $requestedSlug]);
+
+        if ($profile->isSlugLocked() && $requestedSlug !== $profile->slug) {
+            return back()
+                ->withErrors(['slug' => '公開網址首次發布後已鎖定。如有必要更改，請聯絡支援。'])
+                ->withInput();
+        }
+
         $data = $request->validate([
-            'slug' => [
-                'required',
-                'string',
-                'min:3',
-                'max:50',
-                'regex:/^[a-z0-9][a-z0-9-]*[a-z0-9]$/',
-                Rule::unique('kol_profiles', 'slug')->ignore($profile->id),
-            ],
+            'slug' => $slugs->validationRules($profile),
             'card_headline' => ['nullable', 'string', 'max:160'],
             'external_contact_url' => ['nullable', 'url', 'max:500'],
         ]);
 
         $profile->update([
-            'slug' => Str::lower($data['slug']),
+            'slug' => $data['slug'],
             'card_headline' => $data['card_headline'] ?? null,
             'external_contact_url' => $data['external_contact_url'] ?? null,
             'card_theme' => 'classic',
@@ -162,16 +181,33 @@ class KolCardController extends Controller
                 ->withErrors(['publish' => implode(' ', $issues)]);
         }
 
-        $profile->update(['status' => 'published']);
+        $wasLocked = $profile->isSlugLocked();
+        if (! $wasLocked) {
+            $request->validate([
+                'confirm_slug_lock' => ['accepted'],
+            ], [
+                'confirm_slug_lock.accepted' => '請先確認公開網址首次發布後會鎖定。',
+            ]);
+        }
+
+        $profile->update([
+            'status' => 'published',
+            'slug_locked_at' => $profile->slug_locked_at ?? now(),
+        ]);
 
         return redirect()->route('profile.edit', ['step' => 'preview'])
-            ->with('status', 'KOL 卡片已發布，可以分享公開網址。');
+            ->with('status', $wasLocked
+                ? 'KOL 卡片已發布，可以分享公開網址。'
+                : 'KOL 卡片已發布，公開網址亦已鎖定。');
     }
 
     public function unpublish(Request $request): RedirectResponse
     {
         $profile = $this->currentKolProfile($request);
-        $profile->update(['status' => 'draft']);
+        $profile->update([
+            'status' => 'draft',
+            'slug_locked_at' => $profile->slug_locked_at ?? now(),
+        ]);
 
         return redirect()->route('profile.edit', ['step' => 'preview'])
             ->with('status', 'KOL 卡片已轉為草稿，公開網址暫時不會顯示。');
