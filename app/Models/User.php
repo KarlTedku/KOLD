@@ -16,6 +16,7 @@ use Illuminate\Notifications\Notifiable;
     'email',
     'password',
     'avatar',
+    'avatar_source',
     'role',
     'provider',
     'provider_id',
@@ -26,6 +27,12 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    public const AVATAR_SOURCE_MANUAL = 'manual';
+
+    public const AVATAR_SOURCE_META = 'meta_professional';
+
+    public const AVATAR_SOURCE_OAUTH = 'oauth';
 
     protected function casts(): array
     {

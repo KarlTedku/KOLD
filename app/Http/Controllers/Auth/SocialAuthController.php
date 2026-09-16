@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\SocialSyncService;
+use App\Services\UserAvatarService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -39,8 +40,12 @@ class SocialAuthController extends Controller
         return $driver->redirect();
     }
 
-    public function callback(string $provider, Request $request, SocialSyncService $sync): RedirectResponse
-    {
+    public function callback(
+        string $provider,
+        Request $request,
+        SocialSyncService $sync,
+        UserAvatarService $avatars
+    ): RedirectResponse {
         $this->assertProvider($provider);
 
         if ($provider === 'facebook' && $request->session()->get('social_connect.provider') === 'facebook') {
@@ -71,9 +76,10 @@ class SocialAuthController extends Controller
             $user->email = $socialUser->getEmail() ?: $provider.'_'.$socialUser->getId().'@users.kold.local';
         }
 
+        $avatars->setFromOAuth($user, $socialUser->getAvatar());
+
         $user->fill([
             'name' => $socialUser->getName() ?: ($socialUser->getNickname() ?: 'KOLD User'),
-            'avatar' => $socialUser->getAvatar(),
             'provider' => $provider,
             'provider_id' => $socialUser->getId(),
             'email_verified_at' => now(),

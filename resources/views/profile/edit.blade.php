@@ -70,6 +70,51 @@
                     <div><span>步驟 1 / 5</span><h3>基本資料</h3></div>
                     <p>呢啲資料會用喺公開檔案同 AI 標籤建議。</p>
                 </div>
+                @php
+                    $avatarSourceLabel = match ($user->avatar_source) {
+                        \App\Models\User::AVATAR_SOURCE_MANUAL => '你上載嘅圖片',
+                        \App\Models\User::AVATAR_SOURCE_META => '主要 Instagram 專業帳戶',
+                        \App\Models\User::AVATAR_SOURCE_OAUTH => '登入帳戶圖片',
+                        default => '未設定',
+                    };
+                @endphp
+                <div class="avatar-editor">
+                    <div class="avatar-editor-preview" aria-hidden="true">
+                        @if ($user->avatar)
+                            <img src="{{ $user->avatar }}" alt="">
+                        @else
+                            <span>{{ mb_strtoupper(mb_substr($user->profileDisplayName(), 0, 1)) }}</span>
+                        @endif
+                    </div>
+                    <div class="avatar-editor-body">
+                        <div class="avatar-editor-heading">
+                            <div>
+                                <span class="avatar-editor-kicker">公開頭像</span>
+                                <h4>揀一張代表你嘅相</h4>
+                            </div>
+                            <span class="avatar-source">現時：{{ $avatarSourceLabel }}</span>
+                        </div>
+                        <p>支援 JPG、PNG 或 WebP，最大 5MB。手動上載後，之後重新登入或連結 OAuth 都唔會自動覆蓋。</p>
+                        <div class="avatar-editor-actions">
+                            <form class="avatar-upload-form" method="POST" action="{{ route('profile.avatar.update') }}" enctype="multipart/form-data">
+                                @csrf
+                                @method('PUT')
+                                <label for="avatar">選擇圖片</label>
+                                <input id="avatar" name="avatar" type="file" accept="image/jpeg,image/png,image/webp" required>
+                                <button class="btn btn-primary" type="submit">上載新頭像</button>
+                            </form>
+                            @if ($metaAvatarUrl)
+                                <form method="POST" action="{{ route('profile.avatar.meta') }}">
+                                    @csrf
+                                    <button class="btn btn-soft" type="submit">使用主要 Instagram 頭像</button>
+                                </form>
+                            @else
+                                <a class="btn btn-ghost" href="{{ route('social.index') }}">連結 Meta／Instagram</a>
+                            @endif
+                        </div>
+                        @error('avatar')<p class="field-error">{{ $message }}</p>@enderror
+                    </div>
+                </div>
                 <form class="profile-structured-form" method="POST" action="{{ route('profile.update') }}" data-profile-structured-form>
                     @csrf
                     @method('PUT')

@@ -7,7 +7,9 @@ use App\Models\KolProfile;
 use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class KolCardAiMatchingTest extends TestCase
@@ -158,6 +160,61 @@ class KolCardAiMatchingTest extends TestCase
             ->assertSee('香港')
             ->assertSee('粵語')
             ->assertSee('HK$5,000–10,000');
+    }
+
+    public function test_kol_can_upload_a_manual_avatar_that_takes_priority_over_oauth(): void
+    {
+        Storage::fake('public');
+        $kol = User::factory()->create([
+            'role' => 'kol',
+            'avatar' => 'https://example.com/oauth-avatar.jpg',
+            'avatar_source' => User::AVATAR_SOURCE_OAUTH,
+        ]);
+
+        $this->actingAs($kol)
+            ->put(route('profile.avatar.update'), [
+                'avatar' => UploadedFile::fake()->image('creator.jpg', 600, 600)->size(300),
+            ])
+            ->assertRedirect(route('profile.edit', ['step' => 'profile']))
+            ->assertSessionHas('status', '頭像已更新。');
+
+        $kol->refresh();
+        $this->assertSame(User::AVATAR_SOURCE_MANUAL, $kol->avatar_source);
+        $this->assertStringContainsString('/storage/avatars/', (string) $kol->avatar);
+        $this->assertCount(1, Storage::disk('public')->files('avatars'));
+    }
+
+    public function test_kol_can_explicitly_switch_back_to_the_primary_instagram_avatar(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('avatars/old.jpg', 'old-avatar');
+        $kol = User::factory()->create([
+            'role' => 'kol',
+            'avatar' => 'http://localhost/storage/avatars/old.jpg',
+            'avatar_source' => User::AVATAR_SOURCE_MANUAL,
+        ]);
+        SocialAccount::query()->create([
+            'user_id' => $kol->id,
+            'platform' => 'instagram',
+            'account_type' => 'instagram_business',
+            'external_id' => 'ig-primary',
+            'handle' => 'primary.creator',
+            'follower_count' => 1000,
+            'is_primary' => true,
+            'metrics_json' => [
+                'profile_picture_url' => 'https://example.com/professional-avatar.jpg',
+            ],
+        ]);
+
+        $this->actingAs($kol)
+            ->post(route('profile.avatar.meta'))
+            ->assertRedirect(route('profile.edit', ['step' => 'profile']))
+            ->assertSessionHas('status', '已使用主要 Instagram 專業帳戶頭像。');
+
+        $kol->refresh();
+        $this->assertSame('https://example.com/professional-avatar.jpg', $kol->avatar);
+        $this->assertSame(User::AVATAR_SOURCE_META, $kol->avatar_source);
+        Storage::disk('public')->assertMissing('avatars/old.jpg');
     }
 
     public function test_kol_can_save_structured_profile_choices_and_custom_values(): void

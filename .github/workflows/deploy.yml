@@ -79,6 +79,7 @@ jobs:
             --exclude='node_modules' \
             --exclude='vendor' \
             --exclude='database/database.sqlite' \
+            --exclude='storage/app/public/*' \
             --exclude='storage/logs/*' \
             --exclude='storage/framework/cache/data/*' \
             --exclude='storage/framework/down' \
@@ -99,10 +100,11 @@ jobs:
           cd /var/www/kold
           composer install --no-dev --optimize-autoloader --no-interaction
           php artisan migrate --force
+          mkdir -p storage/app/public storage/framework/{cache/data,sessions,views} storage/logs bootstrap/cache
+          php artisan storage:link
           php artisan config:cache
           php artisan route:cache
           php artisan view:cache
-          mkdir -p storage/framework/{cache/data,sessions,views} storage/logs bootstrap/cache
           chown -R www-data:www-data storage bootstrap/cache database
           php artisan up
           echo DEPLOY_OK

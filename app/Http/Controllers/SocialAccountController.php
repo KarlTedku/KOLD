@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SocialAccount;
 use App\Services\SocialSyncService;
+use App\Services\UserAvatarService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -87,8 +88,11 @@ class SocialAccountController extends Controller
         return view('social.meta-select', ['candidates' => $candidates]);
     }
 
-    public function storeMetaAccounts(Request $request, SocialSyncService $sync): RedirectResponse
-    {
+    public function storeMetaAccounts(
+        Request $request,
+        SocialSyncService $sync,
+        UserAvatarService $avatars
+    ): RedirectResponse {
         $data = $request->validate([
             'accounts' => ['required', 'array', 'min:1'],
             'accounts.*' => ['required', 'string'],
@@ -108,13 +112,14 @@ class SocialAccountController extends Controller
         }
 
         $primaryKey = $data['primary'] ?? data_get($selected->first(), 'key');
-
-        if ($selected->contains(fn (array $candidate) => ($candidate['key'] ?? null) === $primaryKey)) {
-            $request->user()
-                ->socialAccounts()
-                ->where('account_type', 'instagram_business')
-                ->update(['is_primary' => false]);
+        if (! $selected->contains(fn (array $candidate) => ($candidate['key'] ?? null) === $primaryKey)) {
+            $primaryKey = data_get($selected->first(), 'key');
         }
+
+        $request->user()
+            ->socialAccounts()
+            ->where('account_type', 'instagram_business')
+            ->update(['is_primary' => false]);
 
         $selected->each(function (array $candidate) use ($request, $sync, $primaryKey): void {
             $sync->syncFacebookPageCandidate(
@@ -123,6 +128,14 @@ class SocialAccountController extends Controller
                 ($candidate['key'] ?? null) === $primaryKey
             );
         });
+
+        $primaryCandidate = $selected->first(
+            fn (array $candidate) => ($candidate['key'] ?? null) === $primaryKey
+        );
+        $avatars->setFromMeta(
+            $request->user(),
+            data_get($primaryCandidate, 'instagram.profile_picture_url')
+        );
 
         $request->session()->forget(['social_connect', 'meta_connect_candidates']);
 
