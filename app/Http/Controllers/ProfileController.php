@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\ProfileAiService;
+use App\Services\UserAvatarService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -25,6 +26,7 @@ class ProfileController extends Controller
             : 'profile';
 
         $progress = [];
+        $metaAvatarUrl = null;
         if ($user->isKol()) {
             $profile = $user->kolProfile;
             $progress = [
@@ -34,9 +36,56 @@ class ProfileController extends Controller
                 'tags' => (bool) $profile?->aiTags->contains('status', 'approved'),
                 'preview' => $profile?->status === 'published',
             ];
+
+            $metaAvatarAccount = $user->socialAccounts
+                ->where('account_type', 'instagram_business')
+                ->sortByDesc('is_primary')
+                ->first(fn ($account): bool => filled(data_get($account->metrics_json, 'profile_picture_url')));
+            $metaAvatarUrl = data_get($metaAvatarAccount?->metrics_json, 'profile_picture_url');
         }
 
-        return view('profile.edit', compact('user', 'step', 'progress'));
+        return view('profile.edit', compact('user', 'step', 'progress', 'metaAvatarUrl'));
+    }
+
+    public function updateAvatar(Request $request, UserAvatarService $avatars): RedirectResponse
+    {
+        abort_unless($request->user()->isKol(), 403);
+
+        $data = $request->validate([
+            'avatar' => [
+                'required',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:5120',
+                'dimensions:min_width=200,min_height=200,max_width=4000,max_height=4000',
+            ],
+        ]);
+
+        $avatars->setManual($request->user(), $data['avatar']);
+
+        return redirect()->route('profile.edit', ['step' => 'profile'])
+            ->with('status', '頭像已更新。');
+    }
+
+    public function useMetaAvatar(Request $request, UserAvatarService $avatars): RedirectResponse
+    {
+        abort_unless($request->user()->isKol(), 403);
+
+        $account = $request->user()
+            ->socialAccounts()
+            ->where('account_type', 'instagram_business')
+            ->get()
+            ->sortByDesc('is_primary')
+            ->first(fn ($socialAccount): bool => filled(data_get($socialAccount->metrics_json, 'profile_picture_url')));
+        $url = data_get($account?->metrics_json, 'profile_picture_url');
+
+        if (! $avatars->setFromMeta($request->user(), $url, force: true)) {
+            return redirect()->route('profile.edit', ['step' => 'profile'])
+                ->with('error', '主要 Instagram 暫時未有可用頭像，請重新連結 Meta 或直接上載圖片。');
+        }
+
+        return redirect()->route('profile.edit', ['step' => 'profile'])
+            ->with('status', '已使用主要 Instagram 專業帳戶頭像。');
     }
 
     public function update(Request $request): RedirectResponse

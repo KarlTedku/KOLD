@@ -178,7 +178,7 @@ The public `/k/{slug}` page is the main KOL acquisition feature, not a later cos
 
 Required for invited beta:
 
-1. Public display name, avatar, headline, bio, niches, regions, and languages.
+1. Public display name, editable avatar, headline, bio, niches, regions, and languages. Avatar priority is manual upload, then primary Meta professional account, then sign-in avatar.
 2. Selected social channels, handles, follower counts, and verified/connected state where available.
 3. Portfolio image grid and selected work links.
 4. KOL-approved AI tags grouped into useful categories.

@@ -57,6 +57,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::put('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
+        Route::post('/profile/avatar/meta', [ProfileController::class, 'useMetaAvatar'])->name('profile.avatar.meta');
         Route::post('/profile/ai-draft', [ProfileController::class, 'aiDraft'])->name('profile.ai');
         Route::put('/profile/card', [KolCardController::class, 'update'])->name('kol-card.update');
         Route::get('/profile/card/preview', [KolCardController::class, 'preview'])->name('kol-card.preview');

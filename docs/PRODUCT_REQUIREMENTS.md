@@ -55,6 +55,7 @@ Important current limits:
 2. KOL chooses the KOL role.
 3. KOL creates a public profile:
    - Display name
+   - Editable avatar (manual upload takes priority; primary Meta professional avatar can be imported automatically)
    - Bio
    - Niches
    - Regions

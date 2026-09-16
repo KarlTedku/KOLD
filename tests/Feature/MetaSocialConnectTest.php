@@ -119,6 +119,88 @@ class MetaSocialConnectTest extends TestCase
         ]);
         $this->assertSame(2, SocialAccount::query()->where('platform', 'facebook')->count());
         $this->assertSame(2, SocialAccount::query()->where('platform', 'instagram')->count());
+        $user->refresh();
+        $this->assertSame('https://example.com/second.creator.jpg', $user->avatar);
+        $this->assertSame(User::AVATAR_SOURCE_META, $user->avatar_source);
+    }
+
+    public function test_connecting_meta_does_not_overwrite_a_manually_uploaded_avatar(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'kol',
+            'avatar' => 'https://kold.test/storage/avatars/manual.jpg',
+            'avatar_source' => User::AVATAR_SOURCE_MANUAL,
+        ]);
+        $candidate = $this->candidate('page-1', 'ig-1', 'professional.creator');
+
+        $this->actingAs($user)
+            ->withSession([
+                'social_connect' => ['provider' => 'facebook'],
+                'meta_connect_candidates' => [$candidate],
+            ])
+            ->post(route('social.meta.store'), [
+                'accounts' => [$candidate['key']],
+                'primary' => $candidate['key'],
+            ])
+            ->assertRedirect(route('social.index'));
+
+        $user->refresh();
+        $this->assertSame('https://kold.test/storage/avatars/manual.jpg', $user->avatar);
+        $this->assertSame(User::AVATAR_SOURCE_MANUAL, $user->avatar_source);
+    }
+
+    public function test_regular_oauth_login_does_not_overwrite_manual_or_professional_avatar(): void
+    {
+        foreach ([User::AVATAR_SOURCE_MANUAL, User::AVATAR_SOURCE_META] as $source) {
+            $user = User::factory()->create([
+                'role' => 'kol',
+                'email' => $source.'@example.com',
+                'provider' => 'facebook',
+                'provider_id' => 'facebook-'.$source,
+                'avatar' => 'https://example.com/'.$source.'.jpg',
+                'avatar_source' => $source,
+            ]);
+
+            $socialUser = new class($user)
+            {
+                public function __construct(private readonly User $user) {}
+
+                public function getId(): string
+                {
+                    return (string) $this->user->provider_id;
+                }
+
+                public function getEmail(): string
+                {
+                    return (string) $this->user->email;
+                }
+
+                public function getName(): string
+                {
+                    return 'OAuth Creator';
+                }
+
+                public function getNickname(): ?string
+                {
+                    return null;
+                }
+
+                public function getAvatar(): string
+                {
+                    return 'https://example.com/new-oauth-avatar.jpg';
+                }
+            };
+            $provider = Mockery::mock();
+            $provider->shouldReceive('user')->once()->andReturn($socialUser);
+            Socialite::shouldReceive('driver')->once()->with('facebook')->andReturn($provider);
+
+            $this->get(route('auth.callback', 'facebook'))->assertRedirect(route('dashboard'));
+
+            $user->refresh();
+            $this->assertSame('https://example.com/'.$source.'.jpg', $user->avatar);
+            $this->assertSame($source, $user->avatar_source);
+            auth()->logout();
+        }
     }
 
     public function test_meta_connect_callback_reports_when_no_instagram_account_is_found(): void
@@ -211,7 +293,7 @@ class MetaSocialConnectTest extends TestCase
                 'id' => $instagramId,
                 'username' => $username,
                 'name' => $username,
-                'profile_picture_url' => 'https://example.com/avatar.jpg',
+                'profile_picture_url' => 'https://example.com/'.$username.'.jpg',
                 'followers_count' => $followers,
                 'media_count' => 5,
             ],
