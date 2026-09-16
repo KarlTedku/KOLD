@@ -184,7 +184,7 @@ Required for invited beta:
 4. KOL-approved AI tags grouped into useful categories.
 5. Optional visible rate range and collaboration formats.
 6. Strong Brand CTA for viewing the marketplace profile or starting a collaboration request.
-7. Mobile-first layout, clean share URL, and social sharing metadata.
+7. Mobile-first layout, a stable share URL locked on first publication, permanent redirects for operator-assisted renames, and social sharing metadata.
 8. KOL visibility controls so private contact data and unapproved AI tags never appear publicly.
 
 The existing authenticated `/u/{user}` page remains the marketplace interaction page. Public visitors use `/k/{slug}`; login is required before sending an invitation or entering a conversation.

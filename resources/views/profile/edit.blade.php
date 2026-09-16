@@ -219,8 +219,19 @@
                     @csrf
                     @method('PUT')
                     <label for="slug">公開短網址</label>
-                    <div class="slug-field"><span>{{ url('/k') }}/</span><input id="slug" name="slug" value="{{ old('slug', $profile?->slug ?: \Illuminate\Support\Str::slug($user->profileDisplayName())) }}" placeholder="mina-daily" required></div>
-                    <p class="field-help">只可使用英文字母、數字同連字號，最少 3 個字元。</p>
+                    <div class="slug-field {{ $profile?->isSlugLocked() ? 'is-locked' : '' }}">
+                        <span>{{ url('/k') }}/</span>
+                        <input id="slug" name="slug" value="{{ old('slug', $profile?->slug ?: \Illuminate\Support\Str::slug($user->profileDisplayName())) }}" placeholder="mina-daily" required @readonly($profile?->isSlugLocked())>
+                    </div>
+                    @if ($profile?->isSlugLocked())
+                        <div class="slug-lock-note is-locked">
+                            <strong>公開網址已鎖定</strong>
+                            <span>為保障身份同已分享連結，首次發布後不可自行更改。如有必要，請聯絡 <a href="mailto:{{ config('kold.support_email') }}">KOLD 支援</a>。</span>
+                        </div>
+                    @else
+                        <p class="field-help">只可使用英文字母、數字同連字號，最少 3 個字元。首次正式發布後會鎖定。</p>
+                    @endif
+                    @error('slug')<p class="field-error">{{ $message }}</p>@enderror
                     <label for="card_headline">一句介紹</label>
                     <input id="card_headline" name="card_headline" maxlength="160" value="{{ old('card_headline', $profile?->card_headline) }}" placeholder="香港美妝與生活創作者">
                     <label for="external_contact_url">合作聯絡連結</label>
@@ -320,6 +331,7 @@
                 </div>
                 <div class="preview-summary">
                     <div><span>公開網址</span><strong>{{ $profile?->slug ? url('/k/'.$profile->slug) : '尚未設定' }}</strong></div>
+                    <div><span>網址狀態</span><strong>{{ $profile?->isSlugLocked() ? '已鎖定' : '首次發布時鎖定' }}</strong></div>
                     <div><span>啟用連結</span><strong>{{ $profile?->cardLinks->where('is_active', true)->count() ?? 0 }}</strong></div>
                     <div><span>已確認標籤</span><strong>{{ $profile?->aiTags->where('status', 'approved')->count() ?? 0 }}</strong></div>
                 </div>
@@ -338,7 +350,16 @@
                         <a class="btn btn-primary" href="{{ route('kol-card.show', $profile->slug) }}" target="_blank">查看公開卡片</a>
                         <form method="POST" action="{{ route('kol-card.unpublish') }}">@csrf<button class="btn btn-ghost" type="submit">取消發布</button></form>
                     @else
-                        <form method="POST" action="{{ route('kol-card.publish') }}">@csrf<button class="btn btn-primary" type="submit" @disabled($issues !== [])>發布卡片</button></form>
+                        <form class="publish-card-form" method="POST" action="{{ route('kol-card.publish') }}">
+                            @csrf
+                            @if (! $profile?->isSlugLocked())
+                                <label class="slug-lock-confirmation">
+                                    <input type="checkbox" name="confirm_slug_lock" value="1" required>
+                                    <span>我確認公開網址 <strong>{{ $profile?->slug ? '/k/'.$profile->slug : '' }}</strong> 首次發布後會鎖定。</span>
+                                </label>
+                            @endif
+                            <button class="btn btn-primary" type="submit" @disabled($issues !== [])>發布卡片</button>
+                        </form>
                     @endif
                 </div>
             @endif

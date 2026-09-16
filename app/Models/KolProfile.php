@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'user_id',
     'display_name',
     'slug',
+    'slug_locked_at',
     'bio',
     'card_headline',
     'external_contact_url',
@@ -35,6 +36,7 @@ class KolProfile extends Model
             'photos' => 'array',
             'rate_min' => 'integer',
             'rate_max' => 'integer',
+            'slug_locked_at' => 'datetime',
         ];
     }
 
@@ -58,9 +60,24 @@ class KolProfile extends Model
         return $this->aiTags()->where('status', 'approved');
     }
 
+    public function slugAliases(): HasMany
+    {
+        return $this->hasMany(KolProfileSlugAlias::class);
+    }
+
+    public function slugChanges(): HasMany
+    {
+        return $this->hasMany(KolProfileSlugChange::class);
+    }
+
     public function isPublished(): bool
     {
         return $this->status === 'published';
+    }
+
+    public function isSlugLocked(): bool
+    {
+        return $this->slug_locked_at !== null;
     }
 
     public function totalFollowers(): int

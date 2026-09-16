@@ -3,6 +3,7 @@
 @section('title', $profile->display_name.' — KOLD Card')
 
 @section('meta')
+    <link rel="canonical" href="{{ route('kol-card.show', $profile->slug) }}">
     <meta name="description" content="{{ $profile->card_headline ?: \Illuminate\Support\Str::limit($profile->bio, 150) }}">
     <meta property="og:title" content="{{ $profile->display_name }} — KOLD">
     <meta property="og:description" content="{{ $profile->card_headline ?: \Illuminate\Support\Str::limit($profile->bio, 150) }}">

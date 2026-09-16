@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\DataDeletionRequest;
 use App\Models\KolProfile;
+use App\Models\KolProfileSlugAlias;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -39,6 +40,7 @@ class LegalAndAccountDeletionTest extends TestCase
             'user_id' => $user->id,
             'display_name' => 'Delete Me',
             'slug' => 'delete-me',
+            'slug_locked_at' => now(),
             'status' => 'published',
         ]);
         $profile->cardLinks()->create([
@@ -58,6 +60,11 @@ class LegalAndAccountDeletionTest extends TestCase
         $this->assertDatabaseMissing('users', ['id' => $user->id]);
         $this->assertDatabaseMissing('kol_profiles', ['id' => $profile->id]);
         $this->assertDatabaseMissing('kol_card_links', ['kol_profile_id' => $profile->id]);
+        $this->assertDatabaseHas('kol_profile_slug_aliases', [
+            'kol_profile_id' => null,
+            'slug' => 'delete-me',
+        ]);
+        $this->assertSame(1, KolProfileSlugAlias::query()->count());
         $this->get(route('data-deletion.status', $deletionRequest->confirmation_code))
             ->assertOk()
             ->assertSee($deletionRequest->confirmation_code);
