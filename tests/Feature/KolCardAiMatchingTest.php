@@ -148,6 +148,139 @@ class KolCardAiMatchingTest extends TestCase
         ]);
     }
 
+    public function test_kol_can_style_card_and_choose_link_icons_with_a_real_embedded_preview(): void
+    {
+        $kol = User::factory()->create(['role' => 'kol']);
+        $profile = KolProfile::query()->create([
+            'user_id' => $kol->id,
+            'display_name' => 'Styled Creator',
+            'slug' => 'styled-creator',
+            'status' => 'published',
+        ]);
+
+        $this->actingAs($kol)
+            ->put(route('kol-card.update'), [
+                'slug' => 'styled-creator',
+                'card_headline' => 'Food, travel and creative life',
+                'card_theme' => 'spotlight',
+                'card_accent' => 'berry',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('spotlight', $profile->fresh()->card_theme);
+        $this->assertSame('berry', $profile->fresh()->card_accent);
+
+        $this->actingAs($kol)
+            ->post(route('kol-card.links.store'), [
+                'title' => 'Instagram',
+                'url' => 'https://instagram.com/styled-creator',
+                'icon' => 'instagram',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('kol_card_links', [
+            'kol_profile_id' => $profile->id,
+            'icon' => 'instagram',
+        ]);
+
+        $this->get(route('profile.edit', ['step' => 'card']))
+            ->assertOk()
+            ->assertSee('data-card-preview-frame', false)
+            ->assertSee('data-card-design-form', false)
+            ->assertSee('聚焦');
+
+        $this->get(route('kol-card.preview', ['embedded' => 1]))
+            ->assertOk()
+            ->assertSee('kol-card-theme-spotlight', false)
+            ->assertSee('kol-card-accent-berry', false)
+            ->assertDontSee('私人預覽')
+            ->assertDontSee('返回編輯');
+
+        $this->get(route('kol-card.show', 'styled-creator'))
+            ->assertOk()
+            ->assertSee('bi bi-instagram', false)
+            ->assertSee('aria-label="社交平台"', false)
+            ->assertSee('Food, travel and creative life');
+    }
+
+    public function test_kol_can_upload_replace_and_remove_a_card_background(): void
+    {
+        Storage::fake('public');
+        $kol = User::factory()->create(['role' => 'kol']);
+        $profile = KolProfile::query()->create([
+            'user_id' => $kol->id,
+            'display_name' => 'Cover Creator',
+            'slug' => 'cover-creator',
+            'status' => 'published',
+        ]);
+
+        $this->actingAs($kol)
+            ->put(route('kol-card.update'), [
+                'slug' => 'cover-creator',
+                'card_theme' => 'spotlight',
+                'card_accent' => 'coral',
+                'background' => UploadedFile::fake()->image('cover.jpg', 1200, 1800)->size(400),
+            ])
+            ->assertRedirect(route('profile.edit', ['step' => 'links']));
+
+        $firstPath = $profile->fresh()->card_background_path;
+        $this->assertNotNull($firstPath);
+        $this->assertSame('spotlight', $profile->fresh()->card_theme);
+        $this->assertSame('coral', $profile->fresh()->card_accent);
+        Storage::disk('public')->assertExists($firstPath);
+        $this->get(route('kol-card.show', 'cover-creator'))
+            ->assertOk()
+            ->assertSee('kol-card-cover', false)
+            ->assertSee(Storage::disk('public')->url($firstPath));
+
+        $this->actingAs($kol)
+            ->put(route('kol-card.update'), [
+                'slug' => 'cover-creator',
+                'background' => UploadedFile::fake()->image('new-cover.png', 1600, 1600)->size(500),
+            ])
+            ->assertRedirect();
+
+        $newPath = $profile->fresh()->card_background_path;
+        $this->assertNotSame($firstPath, $newPath);
+        Storage::disk('public')->assertMissing($firstPath);
+        Storage::disk('public')->assertExists($newPath);
+
+        $this->actingAs($kol)->delete(route('kol-card.background.destroy'))->assertRedirect();
+        $this->assertNull($profile->fresh()->card_background_path);
+        Storage::disk('public')->assertMissing($newPath);
+    }
+
+    public function test_card_style_and_icon_inputs_are_restricted_to_known_choices(): void
+    {
+        $kol = User::factory()->create(['role' => 'kol']);
+        KolProfile::query()->create([
+            'user_id' => $kol->id,
+            'display_name' => 'Safe Creator',
+            'slug' => 'safe-creator',
+            'status' => 'draft',
+        ]);
+
+        $this->actingAs($kol)
+            ->from(route('profile.edit', ['step' => 'card']))
+            ->put(route('kol-card.update'), [
+                'slug' => 'safe-creator',
+                'card_theme' => 'custom-script',
+                'card_accent' => 'invalid',
+            ])
+            ->assertSessionHasErrors(['card_theme', 'card_accent']);
+
+        $this->actingAs($kol)
+            ->from(route('profile.edit', ['step' => 'links']))
+            ->post(route('kol-card.links.store'), [
+                'title' => 'Unsafe',
+                'url' => 'https://example.com',
+                'icon' => 'not-an-icon',
+            ])
+            ->assertSessionHasErrors('icon');
+
+        $this->assertDatabaseCount('kol_card_links', 0);
+    }
+
     public function test_draft_slug_can_change_but_reserved_and_historical_slugs_cannot_be_claimed(): void
     {
         $kol = User::factory()->create(['role' => 'kol']);

@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'card_headline',
     'external_contact_url',
     'card_theme',
+    'card_accent',
+    'card_background_path',
     'niches',
     'regions',
     'languages',

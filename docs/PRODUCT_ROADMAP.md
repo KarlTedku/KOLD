@@ -186,6 +186,7 @@ Required for invited beta:
 6. Strong Brand CTA for viewing the marketplace profile or starting a collaboration request.
 7. Mobile-first layout, a stable share URL locked on first publication, permanent redirects for operator-assisted renames, and social sharing metadata.
 8. KOL visibility controls so private contact data and unapproved AI tags never appear publicly.
+9. KOL-selected card layout and accent colour, optional uploaded background, recognizable link icons, and an in-editor preview before publishing. This customization is implemented locally and still needs release review.
 
 The existing authenticated `/u/{user}` page remains the marketplace interaction page. Public visitors use `/k/{slug}`; login is required before sending an invitation or entering a conversation.
 

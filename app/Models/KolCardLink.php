@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'title',
     'url',
     'type',
+    'icon',
     'sort_order',
     'is_active',
 ])]

@@ -33,6 +33,7 @@ Already implemented:
 - Meta SSO production setup.
 - Local implementation for multi Page / Instagram Business connect.
 - Linktree-style KOL card with guided setup, draft preview, and publishing.
+- Local-only card designer update awaiting release: selectable layouts and colours, a KOL-uploaded background, per-link icons, and an embedded live preview during setup.
 - AI-assisted KOL tagging with KOL approval and fallback mode.
 - Structured brand brief matching with primary and related recommendations.
 - Production demo login disabled by environment.

@@ -61,6 +61,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/profile/avatar/meta', [ProfileController::class, 'useMetaAvatar'])->name('profile.avatar.meta');
         Route::post('/profile/ai-draft', [ProfileController::class, 'aiDraft'])->name('profile.ai');
         Route::put('/profile/card', [KolCardController::class, 'update'])->name('kol-card.update');
+        Route::delete('/profile/card/background', [KolCardController::class, 'destroyBackground'])->name('kol-card.background.destroy');
         Route::get('/profile/card/preview', [KolCardController::class, 'preview'])->name('kol-card.preview');
         Route::post('/profile/card/publish', [KolCardController::class, 'publish'])->name('kol-card.publish');
         Route::post('/profile/card/unpublish', [KolCardController::class, 'unpublish'])->name('kol-card.unpublish');
