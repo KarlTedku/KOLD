@@ -43,6 +43,10 @@ class SocialAuthController extends Controller
     {
         $this->assertProvider($provider);
 
+        if ($provider === 'facebook' && $request->session()->get('social_connect.provider') === 'facebook') {
+            $this->useFacebookConnectConfiguration();
+        }
+
         try {
             $socialUser = Socialite::driver($provider)->user();
         } catch (InvalidStateException|\Throwable $e) {
@@ -136,6 +140,11 @@ class SocialAuthController extends Controller
 
         return filled($clientId) && filled($clientSecret)
             && ! str_starts_with((string) $clientId, 'REPLACE_');
+    }
+
+    protected function useFacebookConnectConfiguration(): void
+    {
+        config(['services.facebook' => config('services.facebook_connect')]);
     }
 
     protected function handleFacebookConnectCallback(Request $request, SocialSyncService $sync, string $accessToken): RedirectResponse

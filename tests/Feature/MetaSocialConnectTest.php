@@ -15,8 +15,42 @@ class MetaSocialConnectTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_meta_connect_redirect_uses_the_dedicated_connect_app(): void
+    {
+        config([
+            'services.facebook.client_id' => 'login-app-id',
+            'services.facebook.client_secret' => 'login-app-secret',
+            'services.facebook_connect' => [
+                'client_id' => 'connect-app-id',
+                'client_secret' => 'connect-app-secret',
+                'redirect' => 'https://kold.test/auth/facebook/callback',
+            ],
+        ]);
+
+        $user = User::factory()->create(['role' => 'kol']);
+        $provider = Mockery::mock();
+        $provider->shouldReceive('setScopes')
+            ->once()
+            ->with(['pages_show_list', 'instagram_basic'])
+            ->andReturnSelf();
+        $provider->shouldReceive('redirect')->once()->andReturn(redirect('https://facebook.test/oauth'));
+        Socialite::shouldReceive('driver')->once()->with('facebook')->andReturn($provider);
+
+        $response = $this->actingAs($user)->get(route('social.connect', 'facebook'));
+
+        $response->assertRedirect('https://facebook.test/oauth');
+        $response->assertSessionHas('social_connect.provider', 'facebook');
+        $this->assertSame('connect-app-id', config('services.facebook.client_id'));
+    }
+
     public function test_meta_connect_callback_stores_candidates_without_creating_a_user(): void
     {
+        config(['services.facebook_connect' => [
+            'client_id' => 'connect-app-id',
+            'client_secret' => 'connect-app-secret',
+            'redirect' => 'https://kold.test/auth/facebook/callback',
+        ]]);
+
         $user = User::factory()->create(['role' => 'kol']);
         $beforeCount = User::count();
 
@@ -42,6 +76,7 @@ class MetaSocialConnectTest extends TestCase
         $response->assertRedirect(route('social.meta.select'));
         $response->assertSessionHas('meta_connect_candidates');
         $this->assertSame($beforeCount, User::count());
+        $this->assertSame('connect-app-id', config('services.facebook.client_id'));
     }
 
     public function test_user_can_store_multiple_meta_instagram_accounts(): void

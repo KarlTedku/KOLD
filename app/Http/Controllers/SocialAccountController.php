@@ -56,7 +56,8 @@ class SocialAccountController extends Controller
                 ->redirect();
         }
 
-        if (! filled(config('services.facebook.client_id'))) {
+        if (! filled(config('services.facebook_connect.client_id'))
+            || ! filled(config('services.facebook_connect.client_secret'))) {
             return back()->with('error', '尚未設定 Meta OAuth，請先用手動填寫。');
         }
 
@@ -66,8 +67,10 @@ class SocialAccountController extends Controller
         ]);
         session()->forget('meta_connect_candidates');
 
+        config(['services.facebook' => config('services.facebook_connect')]);
+
         return Socialite::driver('facebook')
-            ->scopes(['email', 'public_profile', 'pages_show_list', 'instagram_basic'])
+            ->setScopes(['pages_show_list', 'instagram_basic'])
             ->redirect();
     }
 

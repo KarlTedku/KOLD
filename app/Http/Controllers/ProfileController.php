@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\ProfileAiService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -43,20 +44,41 @@ class ProfileController extends Controller
         $user = $request->user();
 
         if ($user->isKol()) {
+            $options = config('kold.profile_options');
             $data = $request->validate([
                 'display_name' => ['required', 'string', 'max:120'],
                 'bio' => ['nullable', 'string', 'max:2000'],
-                'niches' => ['nullable', 'string', 'max:500'],
-                'regions' => ['nullable', 'string', 'max:500'],
-                'languages' => ['nullable', 'string', 'max:500'],
-                'age_range' => ['nullable', 'in:18-24,25-34,35-44'],
+                'niches' => ['nullable', 'array', 'max:'.(count($options['niches']) + 1)],
+                'niches.*' => ['string', 'distinct', Rule::in([...array_keys($options['niches']), 'other'])],
+                'niches_other' => [
+                    'nullable', 'string', 'max:120',
+                    Rule::requiredIf(fn (): bool => in_array('other', (array) $request->input('niches', []), true)),
+                ],
+                'regions' => ['nullable', 'array', 'max:'.(count($options['regions']) + 1)],
+                'regions.*' => ['string', 'distinct', Rule::in([...array_keys($options['regions']), 'other'])],
+                'regions_other' => [
+                    'nullable', 'string', 'max:120',
+                    Rule::requiredIf(fn (): bool => in_array('other', (array) $request->input('regions', []), true)),
+                ],
+                'languages' => ['nullable', 'array', 'max:'.(count($options['languages']) + 1)],
+                'languages.*' => ['string', 'distinct', Rule::in([...array_keys($options['languages']), 'other'])],
+                'languages_other' => [
+                    'nullable', 'string', 'max:120',
+                    Rule::requiredIf(fn (): bool => in_array('other', (array) $request->input('languages', []), true)),
+                ],
+                'age_range' => ['nullable', Rule::in(array_keys($options['age_ranges']))],
                 'photos' => ['nullable', 'string', 'max:4000'],
-                'rate_min' => ['nullable', 'integer', 'min:0'],
-                'rate_max' => ['nullable', 'integer', 'min:0'],
+                'rate_range' => ['nullable', Rule::in([...array_keys($options['rate_ranges']), 'existing'])],
             ]);
 
-            if (filled($data['rate_min'] ?? null) && filled($data['rate_max'] ?? null) && (int) $data['rate_max'] < (int) $data['rate_min']) {
-                return back()->withErrors(['rate_max' => '報價上限必須大於或等於報價下限。'])->withInput();
+            $rateMin = $user->kolProfile?->rate_min;
+            $rateMax = $user->kolProfile?->rate_max;
+            if (isset($data['rate_range']) && $data['rate_range'] === 'existing' && ! $user->kolProfile) {
+                return back()->withErrors(['rate_range' => '請選擇一個報價範圍。'])->withInput();
+            }
+            if (isset($data['rate_range']) && $data['rate_range'] !== 'existing') {
+                $rateMin = $options['rate_ranges'][$data['rate_range']]['min'];
+                $rateMax = $options['rate_ranges'][$data['rate_range']]['max'];
             }
 
             $user->kolProfile()->updateOrCreate(
@@ -64,13 +86,13 @@ class ProfileController extends Controller
                 [
                     'display_name' => $data['display_name'],
                     'bio' => $data['bio'] ?? null,
-                    'niches' => $this->splitList($data['niches'] ?? null),
-                    'regions' => $this->splitList($data['regions'] ?? null),
-                    'languages' => $this->splitList($data['languages'] ?? null),
+                    'niches' => $this->mergeOtherSelection($data['niches'] ?? [], $data['niches_other'] ?? null),
+                    'regions' => $this->mergeOtherSelection($data['regions'] ?? [], $data['regions_other'] ?? null),
+                    'languages' => $this->mergeOtherSelection($data['languages'] ?? [], $data['languages_other'] ?? null),
                     'age_range' => $data['age_range'] ?? null,
                     'photos' => $this->splitList($data['photos'] ?? null),
-                    'rate_min' => $data['rate_min'] ?? null,
-                    'rate_max' => $data['rate_max'] ?? null,
+                    'rate_min' => $rateMin,
+                    'rate_max' => $rateMax,
                     'status' => $user->kolProfile?->status ?? 'draft',
                 ]
             );
@@ -149,6 +171,22 @@ class ProfileController extends Controller
         return collect(preg_split('/[,，、]+/u', $value) ?: [])
             ->map(fn ($item) => trim($item))
             ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, string>  $selected
+     * @return array<int, string>
+     */
+    protected function mergeOtherSelection(array $selected, ?string $other): array
+    {
+        return collect($selected)
+            ->reject(fn (string $value): bool => $value === 'other')
+            ->merge(preg_split('/[,，、]+/u', (string) $other) ?: [])
+            ->map(fn (string $value): string => trim($value))
+            ->filter()
+            ->unique(fn (string $value): string => mb_strtolower($value))
             ->values()
             ->all();
     }

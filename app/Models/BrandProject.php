@@ -9,8 +9,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'brand_user_id', 'title', 'slug', 'brief', 'niches', 'regions', 'platforms',
+    'campaign_objective', 'target_audience', 'collaboration_formats',
+    'compensation_type', 'usage_rights',
     'budget_min', 'budget_max', 'deliverables', 'application_deadline',
-    'campaign_start_date', 'campaign_end_date', 'status',
+    'campaign_start_date', 'campaign_end_date', 'status', 'is_sample',
 ])]
 class BrandProject extends Model
 {
@@ -23,9 +25,11 @@ class BrandProject extends Model
     {
         return [
             'niches' => 'array', 'regions' => 'array', 'platforms' => 'array',
+            'collaboration_formats' => 'array',
             'budget_min' => 'integer', 'budget_max' => 'integer',
             'application_deadline' => 'date', 'campaign_start_date' => 'date',
             'campaign_end_date' => 'date',
+            'is_sample' => 'boolean',
         ];
     }
 

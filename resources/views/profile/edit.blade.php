@@ -7,6 +7,7 @@
     @if ($user->isKol())
         @php
             $profile = $user->kolProfile;
+            $profileOptions = config('kold.profile_options');
             $steps = [
                 'profile' => ['1', '基本資料'],
                 'card' => ['2', '卡片網址'],
@@ -14,6 +15,32 @@
                 'tags' => ['4', 'AI 標籤'],
                 'preview' => ['5', '預覽發布'],
             ];
+            $selectionState = function (string $field, array $stored, array $options, array $aliases): array {
+                $submitted = old($field, $stored);
+                $submitted = is_array($submitted) ? $submitted : [];
+                $normalized = collect($submitted)
+                    ->map(fn (string $value): string => $aliases[$value] ?? $value)
+                    ->unique()
+                    ->values()
+                    ->all();
+                $known = array_values(array_intersect($normalized, array_keys($options)));
+                $custom = array_values(array_diff($normalized, array_keys($options), ['other']));
+                $otherValue = old($field.'_other', implode('、', $custom));
+
+                if (in_array('other', $normalized, true) || $custom !== [] || filled($otherValue)) {
+                    $known[] = 'other';
+                }
+
+                return [array_values(array_unique($known)), $otherValue];
+            };
+            [$selectedNiches, $nichesOther] = $selectionState('niches', $profile?->niches ?? [], $profileOptions['niches'], $profileOptions['legacy_aliases']['niches']);
+            [$selectedRegions, $regionsOther] = $selectionState('regions', $profile?->regions ?? [], $profileOptions['regions'], $profileOptions['legacy_aliases']['regions']);
+            [$selectedLanguages, $languagesOther] = $selectionState('languages', $profile?->languages ?? [], $profileOptions['languages'], $profileOptions['legacy_aliases']['languages']);
+            $matchedRateRange = collect($profileOptions['rate_ranges'])->search(
+                fn (array $range): bool => $range['min'] === $profile?->rate_min && $range['max'] === $profile?->rate_max
+            );
+            $hasExistingRate = $profile && ($profile->rate_min !== null || $profile->rate_max !== null);
+            $selectedRateRange = old('rate_range', $matchedRateRange !== false ? $matchedRateRange : ($hasExistingRate ? 'existing' : 'negotiable'));
         @endphp
 
         <div class="builder-heading">
@@ -43,42 +70,89 @@
                     <div><span>步驟 1 / 5</span><h3>基本資料</h3></div>
                     <p>呢啲資料會用喺公開檔案同 AI 標籤建議。</p>
                 </div>
-                <form method="POST" action="{{ route('profile.update') }}">
+                <form class="profile-structured-form" method="POST" action="{{ route('profile.update') }}" data-profile-structured-form>
                     @csrf
                     @method('PUT')
                     <label for="display_name">顯示名稱</label>
                     <input id="display_name" name="display_name" value="{{ old('display_name', $profile?->display_name) }}" required>
                     <label for="bio">簡介</label>
                     <textarea id="bio" name="bio" placeholder="簡單介紹你嘅內容方向同特色">{{ old('bio', $profile?->bio) }}</textarea>
-                    <div class="grid grid-2">
-                        <div>
-                            <label for="niches">內容類別</label>
-                            <input id="niches" name="niches" value="{{ old('niches', implode('，', $profile?->niches ?? [])) }}" placeholder="美妝，生活，短影音">
+                    <fieldset class="choice-group" data-other-group>
+                        <legend>內容類別 <span class="field-hint">可選多項</span></legend>
+                        <div class="choice-cards choice-cards-3">
+                            @foreach ($profileOptions['niches'] as $value => $label)
+                                <label class="choice-card"><input type="checkbox" name="niches[]" value="{{ $value }}" @checked(in_array($value, $selectedNiches, true))><span>{{ $label }}</span></label>
+                            @endforeach
+                            <label class="choice-card"><input type="checkbox" name="niches[]" value="other" @checked(in_array('other', $selectedNiches, true)) data-other-toggle><span>其他</span></label>
                         </div>
-                        <div>
-                            <label for="regions">主要地區</label>
-                            <input id="regions" name="regions" value="{{ old('regions', implode('，', $profile?->regions ?? [])) }}" placeholder="香港">
+                        <div class="other-choice-field" data-other-field>
+                            <label for="niches_other">其他內容類別</label>
+                            <input id="niches_other" name="niches_other" value="{{ $nichesOther }}" maxlength="120" placeholder="可用逗號分隔">
                         </div>
-                        <div>
-                            <label for="languages">語言</label>
-                            <input id="languages" name="languages" value="{{ old('languages', implode('，', $profile?->languages ?? [])) }}" placeholder="粵語，繁中">
+                        @error('niches')<p class="field-error">{{ $message }}</p>@enderror
+                        @error('niches.*')<p class="field-error">{{ $message }}</p>@enderror
+                        @error('niches_other')<p class="field-error">{{ $message }}</p>@enderror
+                    </fieldset>
+
+                    <fieldset class="choice-group" data-other-group>
+                        <legend>主要地區 <span class="field-hint">可選多項</span></legend>
+                        <div class="choice-cards choice-cards-3">
+                            @foreach ($profileOptions['regions'] as $value => $label)
+                                <label class="choice-card"><input type="checkbox" name="regions[]" value="{{ $value }}" @checked(in_array($value, $selectedRegions, true))><span>{{ $label }}</span></label>
+                            @endforeach
+                            <label class="choice-card"><input type="checkbox" name="regions[]" value="other" @checked(in_array('other', $selectedRegions, true)) data-other-toggle><span>其他</span></label>
                         </div>
-                        <div>
-                            <label for="age_range">年齡層</label>
-                            <select id="age_range" name="age_range">
-                                <option value="">未設定</option>
-                                @foreach (['18-24', '25-34', '35-44'] as $range)
-                                    <option value="{{ $range }}" @selected(old('age_range', $profile?->age_range) === $range)>{{ $range }}</option>
-                                @endforeach
-                            </select>
+                        <div class="other-choice-field" data-other-field>
+                            <label for="regions_other">其他地區</label>
+                            <input id="regions_other" name="regions_other" value="{{ $regionsOther }}" maxlength="120" placeholder="可用逗號分隔">
                         </div>
+                        @error('regions')<p class="field-error">{{ $message }}</p>@enderror
+                        @error('regions.*')<p class="field-error">{{ $message }}</p>@enderror
+                        @error('regions_other')<p class="field-error">{{ $message }}</p>@enderror
+                    </fieldset>
+
+                    <fieldset class="choice-group" data-other-group>
+                        <legend>語言 <span class="field-hint">可選多項</span></legend>
+                        <div class="choice-cards choice-cards-3">
+                            @foreach ($profileOptions['languages'] as $value => $label)
+                                <label class="choice-card"><input type="checkbox" name="languages[]" value="{{ $value }}" @checked(in_array($value, $selectedLanguages, true))><span>{{ $label }}</span></label>
+                            @endforeach
+                            <label class="choice-card"><input type="checkbox" name="languages[]" value="other" @checked(in_array('other', $selectedLanguages, true)) data-other-toggle><span>其他</span></label>
+                        </div>
+                        <div class="other-choice-field" data-other-field>
+                            <label for="languages_other">其他語言</label>
+                            <input id="languages_other" name="languages_other" value="{{ $languagesOther }}" maxlength="120" placeholder="可用逗號分隔">
+                        </div>
+                        @error('languages')<p class="field-error">{{ $message }}</p>@enderror
+                        @error('languages.*')<p class="field-error">{{ $message }}</p>@enderror
+                        @error('languages_other')<p class="field-error">{{ $message }}</p>@enderror
+                    </fieldset>
+
+                    <div class="profile-single-select">
+                        <label for="age_range">年齡層</label>
+                        <select id="age_range" name="age_range">
+                            <option value="">未設定</option>
+                            @foreach ($profileOptions['age_ranges'] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('age_range', $profile?->age_range) === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('age_range')<p class="field-error">{{ $message }}</p>@enderror
                     </div>
                     <label for="photos">作品圖 URL（逗號分隔）</label>
                     <textarea id="photos" name="photos" placeholder="https://...">{{ old('photos', implode('，', $profile?->photos ?? [])) }}</textarea>
-                    <div class="grid grid-2">
-                        <div><label for="rate_min">報價下限</label><input id="rate_min" type="number" min="0" name="rate_min" value="{{ old('rate_min', $profile?->rate_min) }}"></div>
-                        <div><label for="rate_max">報價上限</label><input id="rate_max" type="number" min="0" name="rate_max" value="{{ old('rate_max', $profile?->rate_max) }}"></div>
-                    </div>
+                    <fieldset class="choice-group">
+                        <legend>參考合作報價 <span class="field-hint">單選</span></legend>
+                        <p class="field-help">選擇一般單次合作嘅參考範圍，實際價錢仍可按內容商議。</p>
+                        <div class="choice-cards choice-cards-2">
+                            @foreach ($profileOptions['rate_ranges'] as $value => $range)
+                                <label class="choice-card"><input type="radio" name="rate_range" value="{{ $value }}" @checked($selectedRateRange === $value)><span>{{ $range['label'] }}</span></label>
+                            @endforeach
+                            @if ($hasExistingRate && $matchedRateRange === false)
+                                <label class="choice-card"><input type="radio" name="rate_range" value="existing" @checked($selectedRateRange === 'existing')><span>保留現有：HK${{ number_format((int) ($profile->rate_min ?? 0)) }}–{{ number_format((int) ($profile->rate_max ?? 0)) }}</span></label>
+                            @endif
+                        </div>
+                        @error('rate_range')<p class="field-error">{{ $message }}</p>@enderror
+                    </fieldset>
                     <div class="builder-actions"><span></span><button class="btn btn-primary" type="submit">儲存並繼續</button></div>
                 </form>
 
@@ -241,4 +315,29 @@
         </form>
     @endif
 </section>
+@endsection
+
+@section('scripts')
+<script>
+(() => {
+    const form = document.querySelector('[data-profile-structured-form]');
+    if (!form) return;
+
+    form.classList.add('is-enhanced');
+    form.querySelectorAll('[data-other-group]').forEach((group) => {
+        const toggle = group.querySelector('[data-other-toggle]');
+        const field = group.querySelector('[data-other-field]');
+        const input = field?.querySelector('input');
+        if (!toggle || !field || !input) return;
+
+        const sync = () => {
+            field.hidden = !toggle.checked;
+            input.required = toggle.checked;
+        };
+
+        toggle.addEventListener('change', sync);
+        sync();
+    });
+})();
+</script>
 @endsection
